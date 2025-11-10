@@ -1,0 +1,13 @@
+# mise tool versions for PilatesOnPhx project
+# These versions are tested and known to work with this project
+elixir 1.19.0-otp-28
+# Erlang/OTP 28.1 provides the latest stable performance improvements and bug fixes
+# Official support added in Elixir 1.19.0
+erlang 28.1
+# Node.js for asset compilation (esbuild, tailwind)
+# Version 22+ provides excellent performance for our build tools
+nodejs 22.14.0
+# PostgreSQL for database
+# Version 16+ recommended for best performance and latest features
+# Note: Install via system package manager or Docker, not mise
+# postgres 16.6
