@@ -14,6 +14,8 @@ defmodule PilatesOnPhx.AccountsFixtures do
   alias PilatesOnPhx.Accounts
   alias PilatesOnPhx.Accounts.{User, Organization, Token, OrganizationMembership}
 
+  require Ash.Query
+
   @doc """
   Creates an organization with valid attributes.
 
