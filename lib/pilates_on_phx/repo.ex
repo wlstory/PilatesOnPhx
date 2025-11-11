@@ -1,5 +1,7 @@
 defmodule PilatesOnPhx.Repo do
-  use AshPostgres.Repo, otp_app: :pilates_on_phx
+  use AshPostgres.Repo,
+    otp_app: :pilates_on_phx,
+    warn_on_missing_ash_functions?: false
 
   @impl AshPostgres.Repo
   def installed_extensions do
