@@ -23,7 +23,8 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
 
   use Ash.Resource,
     domain: PilatesOnPhx.Accounts,
-    data_layer: AshPostgres.DataLayer
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
 
   postgres do
     table "organization_memberships"

@@ -38,7 +38,8 @@ defmodule PilatesOnPhx.Accounts.User do
   use Ash.Resource,
     domain: PilatesOnPhx.Accounts,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshAuthentication]
+    extensions: [AshAuthentication],
+    authorizers: [Ash.Policy.Authorizer]
 
   postgres do
     table "users"
@@ -56,7 +57,6 @@ defmodule PilatesOnPhx.Accounts.User do
     attribute :hashed_password, :string do
       allow_nil? false
       sensitive? true
-      private? true
     end
 
     attribute :name, :string do
@@ -99,17 +99,6 @@ defmodule PilatesOnPhx.Accounts.User do
             # For now, just log the token
             require Logger
             Logger.info("Password reset token for #{user.email}: #{token}")
-            :ok
-          end
-        end
-
-        confirmation do
-          monitor_fields [:email]
-          sender fn user, token, _opts ->
-            # TODO: Implement email sending
-            # For now, just log the token
-            require Logger
-            Logger.info("Email confirmation token for #{user.email}: #{token}")
             :ok
           end
         end

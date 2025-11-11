@@ -29,7 +29,8 @@ defmodule PilatesOnPhx.Accounts.Token do
   use Ash.Resource,
     domain: PilatesOnPhx.Accounts,
     data_layer: AshPostgres.DataLayer,
-    extensions: [AshAuthentication.TokenResource]
+    extensions: [AshAuthentication.TokenResource],
+    authorizers: [Ash.Policy.Authorizer]
 
   postgres do
     table "tokens"
