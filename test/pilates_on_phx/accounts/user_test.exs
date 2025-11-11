@@ -21,7 +21,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         |> Ash.Changeset.for_create(:register, attrs)
         |> Ash.create(domain: Accounts)
 
-      assert user.email == "newuser@example.com"
+      assert to_string(user.email) == "newuser@example.com"
       assert user.name == "New User"
       assert user.role == :client
       assert user.hashed_password != nil
@@ -212,7 +212,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         |> Ash.Changeset.for_create(:register, attrs)
         |> Ash.create(domain: Accounts)
 
-      assert user.email == "uppercase@example.com"
+      assert to_string(user.email) == "uppercase@example.com"
     end
   end
 
@@ -232,7 +232,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         |> Ash.read_one(domain: Accounts)
 
       assert authenticated_user.id == user.id
-      assert authenticated_user.email == user.email
+      assert to_string(authenticated_user.email) == to_string(user.email)
     end
 
     test "fails authentication with invalid password" do
@@ -407,7 +407,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         User
         |> Ash.Query.filter(id == ^user.id)
         |> Ash.Query.load(:memberships)
-        |> Accounts.read_one!()
+        |> Ash.read_one!(domain: Accounts)
 
       assert length(loaded_user.memberships) == 3
 
@@ -428,7 +428,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         User
         |> Ash.Query.filter(id == ^user.id)
         |> Ash.Query.load([:memberships, :organizations])
-        |> Accounts.read_one!()
+        |> Ash.read_one!(domain: Accounts)
 
       assert loaded_user.role == :instructor
       assert length(loaded_user.memberships) == 3
@@ -451,7 +451,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         User
         |> Ash.Query.filter(id == ^user.id)
         |> Ash.Query.load(:memberships)
-        |> Accounts.read_one!()
+        |> Ash.read_one!(domain: Accounts)
 
       memberships_by_org = Map.new(loaded_user.memberships, fn m -> {m.organization_id, m} end)
 
@@ -466,7 +466,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         User
         |> Ash.Query.filter(id == ^user.id)
         |> Ash.Query.load(:organizations)
-        |> Accounts.read_one!()
+        |> Ash.read_one!(domain: Accounts)
 
       assert length(loaded_user.organizations) == 2
       assert Enum.all?(loaded_user.organizations, fn org ->
@@ -515,7 +515,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       create_user(email: "user2@example.com")
       create_user(email: "user3@example.com")
 
-      users = User |> Accounts.read!()
+      users = User |> Ash.read!(domain: Accounts)
 
       assert length(users) >= 3
     end
@@ -529,7 +529,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       instructors =
         User
         |> Ash.Query.filter(role == :instructor)
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       assert length(instructors) >= 2
       assert Enum.all?(instructors, fn user -> user.role == :instructor end)
@@ -541,7 +541,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       found_users =
         User
         |> Ash.Query.filter(email == ^user.email)
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       assert length(found_users) == 1
       assert hd(found_users).id == user.id
@@ -555,7 +555,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       smith_users =
         User
         |> Ash.Query.filter(contains(name, "Smith"))
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       assert length(smith_users) >= 2
       assert Enum.all?(smith_users, fn user -> String.contains?(user.name, "Smith") end)
@@ -626,7 +626,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, loaded} =
         User
         |> Ash.Query.filter(id == ^user2.id)
-        |> Accounts.read_one(actor: user1)
+        |> Ash.read_one(domain: Accounts, actor: user1)
 
       assert loaded.id == user2.id
     end
@@ -642,7 +642,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:error, %Ash.Error.Forbidden{}} =
         User
         |> Ash.Query.filter(id == ^user2.id)
-        |> Accounts.read_one(actor: user1)
+        |> Ash.read_one(domain: Accounts, actor: user1)
     end
 
     test "owner can update other users in their organization" do
@@ -653,7 +653,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       # Update membership to owner role
       membership = Accounts.OrganizationMembership
       |> Ash.Query.filter(user_id == ^owner.id and organization_id == ^organization.id)
-      |> Accounts.read_one!()
+      |> Ash.read_one!(domain: Accounts)
 
       Accounts.OrganizationMembership
       |> Ash.Changeset.for_update(:update, membership, %{role: :owner})
