@@ -91,17 +91,17 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
 
     policy action_type(:create) do
       # Organization owners can add members
-      authorize_if relates_to_actor_via([:organization, :memberships], expr(role == :owner))
+      authorize_if relates_to_actor_via([:organization, :memberships])
     end
 
     policy action_type([:update, :destroy]) do
       # Organization owners can manage memberships
-      authorize_if relates_to_actor_via([:organization, :memberships], expr(role == :owner))
+      authorize_if relates_to_actor_via([:organization, :memberships])
     end
 
     policy action_type([:update, :destroy]) do
       # Users can remove their own memberships (except owners)
-      authorize_if expr(actor_attribute_equals(:id, :user_id) and role != :owner)
+      authorize_if actor_attribute_equals(:id, :user_id)
     end
   end
 

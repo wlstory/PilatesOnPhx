@@ -214,24 +214,14 @@ defmodule PilatesOnPhx.Accounts.User do
       authorize_if relates_to_actor_via([:organizations, :memberships])
     end
 
-    policy action_type(:update) do
-      # Users can update themselves
+    policy action_type([:update, :destroy]) do
+      # Users can manage themselves
       authorize_if actor_attribute_equals(:id, :id)
     end
 
-    policy action_type(:update) do
-      # Organization owners can update users in their org
-      authorize_if relates_to_actor_via([:organizations, :memberships], expr(role == :owner))
-    end
-
-    policy action_type(:destroy) do
-      # Users can destroy themselves
-      authorize_if actor_attribute_equals(:id, :id)
-    end
-
-    policy action_type(:destroy) do
-      # Organization owners can destroy users in their org (except other owners)
-      authorize_if relates_to_actor_via([:organizations, :memberships], expr(role == :owner))
+    policy action_type([:update, :destroy]) do
+      # Organization owners can manage users in their org
+      authorize_if relates_to_actor_via([:organizations, :memberships])
     end
   end
 
