@@ -13,6 +13,9 @@ config :pilates_on_phx, PilatesOnPhx.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
+# Configure token signing secret for AshAuthentication in tests
+config :pilates_on_phx, :token_signing_secret, "test_token_signing_secret"
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :pilates_on_phx, PilatesOnPhxWeb.Endpoint,
