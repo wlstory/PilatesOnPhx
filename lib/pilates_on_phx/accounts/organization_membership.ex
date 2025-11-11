@@ -71,12 +71,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
     defaults [:read, :destroy]
 
     create :create do
-      accept [:role, :joined_at]
-      argument :user_id, :uuid, allow_nil?: false
-      argument :organization_id, :uuid, allow_nil?: false
-
-      change manage_relationship(:user_id, :user, type: :append_and_remove)
-      change manage_relationship(:organization_id, :organization, type: :append_and_remove)
+      accept [:role, :joined_at, :user_id, :organization_id]
     end
 
     update :update do
@@ -85,9 +80,8 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
   end
 
   policies do
-    # Allow reading without actor for internal operations
     policy action_type(:read) do
-      authorize_if always()
+      authorize_if actor_attribute_equals(:id, :user_id)
     end
 
     policy action_type(:create) do

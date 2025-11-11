@@ -128,9 +128,9 @@ defmodule PilatesOnPhx.Accounts.Organization do
   end
 
   policies do
-    # Allow reading without actor for internal operations (like relationship management)
     policy action_type(:read) do
-      authorize_if always()
+      # Members can read their organization
+      authorize_if relates_to_actor_via(:memberships)
     end
 
     policy action_type(:create) do
