@@ -118,6 +118,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
       %User{memberships: [%{organization_id: org1.id}, ...]}
   """
   def create_multi_org_user(attrs \\ %{}) do
+    attrs = Enum.into(attrs, %{})
     user_attrs = Map.get(attrs, :user_attrs, %{})
 
     # Create base user without organization membership

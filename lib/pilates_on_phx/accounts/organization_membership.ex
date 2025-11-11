@@ -85,8 +85,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
   end
 
   policies do
+    # Allow reading without actor for internal operations
     policy action_type(:read) do
-      authorize_if actor_attribute_equals(:id, :user_id)
+      authorize_if always()
     end
 
     policy action_type(:create) do

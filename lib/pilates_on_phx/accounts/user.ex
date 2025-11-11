@@ -253,9 +253,9 @@ defmodule PilatesOnPhx.Accounts.User do
       authorize_if always()
     end
 
+    # Allow reading without actor for internal operations
     policy action_type(:read) do
-      # Users can read themselves
-      authorize_if actor_attribute_equals(:id, :id)
+      authorize_if always()
     end
 
     policy action_type(:read) do

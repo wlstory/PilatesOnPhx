@@ -19,7 +19,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, user} =
         User
         |> Ash.Changeset.for_create(:register, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert user.email == "newuser@example.com"
       assert user.name == "New User"
@@ -34,11 +34,12 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         name: "No Email User"
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         User
         |> Ash.Changeset.for_create(:register, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
       assert Enum.any?(changeset.errors, fn error -> error.field == :email end)
     end
@@ -49,11 +50,12 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         name: "No Password User"
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         User
         |> Ash.Changeset.for_create(:register, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
       assert Enum.any?(changeset.errors, fn error -> error.field == :password end)
     end
@@ -65,11 +67,12 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         name: "Invalid Email User"
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         User
         |> Ash.Changeset.for_create(:register, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
       assert Enum.any?(changeset.errors, fn error ->
         error.field == :email and error.message =~ "email"
@@ -89,7 +92,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, _user} =
         User
         |> Ash.Changeset.for_create(:register, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Attempt to create second user with same email
       duplicate_attrs = %{
@@ -98,11 +101,12 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         name: "Second User"
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         User
         |> Ash.Changeset.for_create(:register, duplicate_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
       assert Enum.any?(changeset.errors, fn error ->
         error.field == :email and error.message =~ "unique"
@@ -117,11 +121,12 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         name: "Short Password User"
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         User
         |> Ash.Changeset.for_create(:register, short_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
       assert Enum.any?(changeset.errors, fn error ->
         error.field == :password
@@ -138,7 +143,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, user} =
         User
         |> Ash.Changeset.for_create(:register, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Password should be hashed
       assert user.hashed_password != attrs.password
@@ -158,7 +163,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, user} =
         User
         |> Ash.Changeset.for_create(:register, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert user.role == :client
     end
@@ -175,7 +180,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, instructor} =
         User
         |> Ash.Changeset.for_create(:register, instructor_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert instructor.role == :instructor
 
@@ -190,7 +195,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, owner} =
         User
         |> Ash.Changeset.for_create(:register, owner_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert owner.role == :owner
     end
@@ -205,7 +210,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, user} =
         User
         |> Ash.Changeset.for_create(:register, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert user.email == "uppercase@example.com"
     end
@@ -224,7 +229,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
           email: "auth@example.com",
           password: password
         })
-        |> Accounts.read_one()
+        |> Ash.read_one(domain: Accounts)
 
       assert authenticated_user.id == user.id
       assert authenticated_user.email == user.email
@@ -239,7 +244,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
           email: user.email,
           password: "WrongPassword456!"
         })
-        |> Accounts.read_one()
+        |> Ash.read_one(domain: Accounts)
     end
 
     test "fails authentication with non-existent email" do
@@ -249,7 +254,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
           email: "nonexistent@example.com",
           password: "SomePassword123!"
         })
-        |> Accounts.read_one()
+        |> Ash.read_one(domain: Accounts)
     end
 
     test "authentication is case-insensitive for email" do
@@ -263,7 +268,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
           email: "CASETEST@EXAMPLE.COM",
           password: password
         })
-        |> Accounts.read_one()
+        |> Ash.read_one(domain: Accounts)
 
       assert authenticated.id == user.id
     end
@@ -276,7 +281,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, updated} =
         user
         |> Ash.Changeset.for_update(:update, %{name: "Updated Name"}, actor: user)
-        |> Accounts.update()
+        |> Ash.update(domain: Accounts)
 
       assert updated.name == "Updated Name"
       assert updated.id == user.id
@@ -288,7 +293,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, updated} =
         user
         |> Ash.Changeset.for_update(:update, %{role: :instructor}, actor: user)
-        |> Accounts.update()
+        |> Ash.update(domain: Accounts)
 
       assert updated.role == :instructor
     end
@@ -297,10 +302,12 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       user1 = create_user(email: "user1@example.com")
       user2 = create_user(email: "user2@example.com")
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         user1
         |> Ash.Changeset.for_update(:update, %{email: "user2@example.com"}, actor: user1)
-        |> Accounts.update()
+        |> Ash.update(domain: Accounts)
+
+      changeset = error.changeset
 
       assert changeset.valid? == false
     end
@@ -311,7 +318,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, updated} =
         user
         |> Ash.Changeset.for_update(:update, %{name: "Self Updated"}, actor: user)
-        |> Accounts.update()
+        |> Ash.update(domain: Accounts)
 
       assert updated.name == "Self Updated"
     end
@@ -330,16 +337,16 @@ defmodule PilatesOnPhx.Accounts.UserTest do
           password: new_password,
           password_confirmation: new_password
         }, actor: user)
-        |> Accounts.update()
+        |> Ash.update(domain: Accounts)
 
       # Verify old password no longer works
-      assert {:error, _} =
+      assert {:error, %Ash.Error.Query.NotFound{}} =
         User
         |> Ash.Query.for_read(:sign_in_with_password, %{
           email: user.email,
           password: old_password
         })
-        |> Accounts.read_one()
+        |> Ash.read_one(domain: Accounts)
 
       # Verify new password works
       assert {:ok, authenticated} =
@@ -348,7 +355,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
           email: user.email,
           password: new_password
         })
-        |> Accounts.read_one()
+        |> Ash.read_one(domain: Accounts)
 
       assert authenticated.id == user.id
     end
@@ -356,14 +363,16 @@ defmodule PilatesOnPhx.Accounts.UserTest do
     test "fails password change with incorrect current password" do
       user = create_user(password: "CorrectPassword123!")
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         user
         |> Ash.Changeset.for_update(:change_password, %{
           current_password: "WrongPassword456!",
           password: "NewPassword789!",
           password_confirmation: "NewPassword789!"
         }, actor: user)
-        |> Accounts.update()
+        |> Ash.update(domain: Accounts)
+
+      changeset = error.changeset
 
       assert changeset.valid? == false
     end
@@ -371,15 +380,16 @@ defmodule PilatesOnPhx.Accounts.UserTest do
     test "requires password confirmation to match" do
       user = create_user(password: "CurrentPassword123!")
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         user
         |> Ash.Changeset.for_update(:change_password, %{
           current_password: "CurrentPassword123!",
           password: "NewPassword456!",
           password_confirmation: "DifferentPassword789!"
         }, actor: user)
-        |> Accounts.update()
+        |> Ash.update(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
     end
   end
@@ -489,11 +499,12 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         role: :invalid_role
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         User
         |> Ash.Changeset.for_create(:register, invalid_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
     end
   end
@@ -566,7 +577,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, confirmed} =
         user
         |> Ash.Changeset.for_update(:update, %{confirmed_at: confirmed_at}, actor: user)
-        |> Accounts.update()
+        |> Ash.update(domain: Accounts)
 
       assert confirmed.confirmed_at != nil
     end
@@ -588,7 +599,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       {:ok, updated} =
         user
         |> Ash.Changeset.for_update(:update, %{name: "Updated"}, actor: user)
-        |> Accounts.update()
+        |> Ash.update(domain: Accounts)
 
       assert DateTime.compare(updated.updated_at, original_updated_at) == :gt
     end
@@ -601,7 +612,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, loaded_user} =
         User
         |> Ash.Query.filter(id == ^user.id)
-        |> Accounts.read_one(actor: user)
+        |> Ash.read_one(domain: Accounts, actor: user)
 
       assert loaded_user.id == user.id
     end
@@ -646,12 +657,12 @@ defmodule PilatesOnPhx.Accounts.UserTest do
 
       Accounts.OrganizationMembership
       |> Ash.Changeset.for_update(:update, membership, %{role: :owner})
-      |> Accounts.update!()
+      |> Ash.update!(domain: Accounts)
 
       assert {:ok, updated} =
         member
         |> Ash.Changeset.for_update(:update, %{name: "Updated by Owner"}, actor: owner)
-        |> Accounts.update()
+        |> Ash.update(domain: Accounts)
 
       assert updated.name == "Updated by Owner"
     end
@@ -664,7 +675,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:error, %Ash.Error.Forbidden{}} =
         user2
         |> Ash.Changeset.for_update(:update, %{name: "Unauthorized Update"}, actor: user1)
-        |> Accounts.update()
+        |> Ash.update(domain: Accounts)
     end
   end
 
@@ -678,11 +689,12 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         name: "Long Email User"
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         User
         |> Ash.Changeset.for_create(:register, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
     end
 
@@ -693,11 +705,12 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         name: "Invalid Char User"
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         User
         |> Ash.Changeset.for_create(:register, invalid_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
     end
 
@@ -711,7 +724,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       assert {:ok, user} =
         User
         |> Ash.Changeset.for_create(:register, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert user.name == "José García 李明"
     end
@@ -723,11 +736,12 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         name: "Empty Email User"
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         User
         |> Ash.Changeset.for_create(:register, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
     end
   end
@@ -745,7 +759,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
 
           User
           |> Ash.Changeset.for_create(:register, attrs)
-          |> Accounts.create()
+          |> Ash.create(domain: Accounts)
         end)
       end)
 
@@ -772,7 +786,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
 
           User
           |> Ash.Changeset.for_create(:register, attrs)
-          |> Accounts.create()
+          |> Ash.create(domain: Accounts)
         end)
       end)
 
