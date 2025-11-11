@@ -10,13 +10,6 @@ This document lists the required GitHub secrets for the workflows in this reposi
   - Used for deploying to Fly.io
   - Workflow: `.github/workflows/fly-deploy.yml`
 
-### Claude Code Integration
-
-- **ANTHROPIC_API_KEY** ⚠️ Needs to be added
-  - Used for Claude Code integration in issues and PRs
-  - Workflow: `.github/workflows/claude.yml`
-  - Get your key from: https://console.anthropic.com/
-
 ## Adding Secrets
 
 To add a secret to the repository:
