@@ -83,14 +83,7 @@ defmodule PilatesOnPhx.Accounts do
   # Wrap Ash functions to provide test compatibility
   # The tests expect {:error, changeset} but Ash 3.0 returns {:error, %Ash.Error.Invalid{changeset: changeset}}
 
-  def create(changeset) do
-    case Ash.create(changeset, domain: __MODULE__) do
-      {:error, %Ash.Error.Invalid{changeset: cs}} when not is_nil(cs) and not is_binary(cs) ->
-        {:error, cs}
-      other ->
-        other
-    end
-  end
+  def create(changeset, opts \\ [])
 
   def create(changeset, opts) do
     opts = Keyword.put(opts, :domain, __MODULE__)
@@ -102,14 +95,7 @@ defmodule PilatesOnPhx.Accounts do
     end
   end
 
-  def update(changeset_or_record) do
-    case Ash.update(changeset_or_record, domain: __MODULE__) do
-      {:error, %Ash.Error.Invalid{changeset: cs}} when not is_nil(cs) and not is_binary(cs) ->
-        {:error, cs}
-      other ->
-        other
-    end
-  end
+  def update(changeset_or_record, opts \\ [])
 
   def update(changeset_or_record, opts) do
     opts = Keyword.put(opts, :domain, __MODULE__)
