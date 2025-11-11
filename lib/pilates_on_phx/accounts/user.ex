@@ -248,6 +248,11 @@ defmodule PilatesOnPhx.Accounts.User do
   end
 
   policies do
+    # Allow public registration
+    policy action(:register) do
+      authorize_if always()
+    end
+
     policy action_type(:read) do
       # Users can read themselves
       authorize_if actor_attribute_equals(:id, :id)
