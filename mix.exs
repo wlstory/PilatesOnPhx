@@ -23,7 +23,8 @@ defmodule PilatesOnPhx.MixProject do
           PilatesOnPhx.Repo,
           PilatesOnPhxWeb.Telemetry,
           # Ignore Ash Domain macro modules (no actual code)
-          ~r/^PilatesOnPhx\.\w+$/ # Top-level domain modules
+          # Top-level domain modules
+          ~r/^PilatesOnPhx\.\w+$/
         ]
       ],
       dialyzer: dialyzer()

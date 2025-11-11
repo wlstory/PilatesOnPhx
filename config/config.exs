@@ -9,7 +9,13 @@ import Config
 
 config :pilates_on_phx,
   ecto_repos: [PilatesOnPhx.Repo],
-  generators: [timestamp_type: :utc_datetime]
+  generators: [timestamp_type: :utc_datetime],
+  ash_domains: [
+    PilatesOnPhx.Accounts,
+    PilatesOnPhx.Studios,
+    PilatesOnPhx.Classes,
+    PilatesOnPhx.Bookings
+  ]
 
 # Configures the endpoint
 config :pilates_on_phx, PilatesOnPhxWeb.Endpoint,
@@ -59,6 +65,12 @@ config :logger, :default_formatter,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# Configure Spark formatter for Ash DSL
+config :spark, :formatter,
+  remove_parens?: true,
+  "Ash.Resource": [],
+  "Ash.Domain": []
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
