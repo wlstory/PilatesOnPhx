@@ -4,7 +4,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
 
   These fixtures create test data through proper Ash domain actions, ensuring:
   - All business logic is exercised
-  - Authorization policies are respected
+  - Authorization policies are respected (with test bypass for fixture creation)
   - Multi-tenant boundaries are enforced
   - Resources are created in valid states
 
@@ -15,6 +15,14 @@ defmodule PilatesOnPhx.AccountsFixtures do
   alias PilatesOnPhx.Accounts.{User, Organization, Token, OrganizationMembership}
 
   require Ash.Query
+
+  @doc """
+  Returns a bypass actor for test fixtures that bypasses authorization policies.
+  This allows test setup to create resources without complex authorization chains.
+  """
+  def bypass_actor do
+    %{bypass_strict_access: true}
+  end
 
   @doc """
   Creates an organization with valid attributes.
@@ -47,7 +55,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
     # Create organization - owner will be set via membership
     Organization
     |> Ash.Changeset.for_create(:create, org_attrs)
-    |> Ash.create!(domain: Accounts)
+    |> Ash.create!(domain: Accounts, actor: bypass_actor())
   end
 
   @doc """
@@ -89,7 +97,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
     # Create user through registration action
     user = User
     |> Ash.Changeset.for_create(:register, user_attrs)
-    |> Ash.create!(domain: Accounts)
+    |> Ash.create!(domain: Accounts, actor: bypass_actor())
 
     # Create organization membership
     create_organization_membership(user: user, organization: organization)
@@ -98,7 +106,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
     User
     |> Ash.Query.filter(id == ^user.id)
     |> Ash.Query.load(:memberships)
-    |> Ash.read_one!(domain: Accounts)
+    |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
   end
 
   @doc """
@@ -132,7 +140,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
 
     user = User
     |> Ash.Changeset.for_create(:register, base_attrs)
-    |> Ash.create!(domain: Accounts)
+    |> Ash.create!(domain: Accounts, actor: bypass_actor())
 
     # Create organization memberships
     organizations = if orgs = attrs[:organizations] do
@@ -150,7 +158,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
     User
     |> Ash.Query.filter(id == ^user.id)
     |> Ash.Query.load([:memberships, :organizations])
-    |> Ash.read_one!(domain: Accounts)
+    |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
   end
 
   @doc """
@@ -183,7 +191,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
 
     OrganizationMembership
     |> Ash.Changeset.for_create(:create, membership_attrs)
-    |> Ash.create!(domain: Accounts)
+    |> Ash.create!(domain: Accounts, actor: bypass_actor())
   end
 
   @doc """
@@ -214,7 +222,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
 
     token = Token
     |> Ash.Changeset.for_create(:create, token_attrs)
-    |> Ash.create!(domain: Accounts)
+    |> Ash.create!(domain: Accounts, actor: bypass_actor())
 
     {user, token}
   end
@@ -248,7 +256,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
 
     Token
     |> Ash.Changeset.for_create(:create, token_attrs)
-    |> Ash.create!(domain: Accounts)
+    |> Ash.create!(domain: Accounts, actor: bypass_actor())
   end
 
   @doc """
@@ -312,11 +320,11 @@ defmodule PilatesOnPhx.AccountsFixtures do
     # Update membership to owner role
     membership = OrganizationMembership
     |> Ash.Query.filter(user_id == ^owner.id and organization_id == ^organization.id)
-    |> Ash.read_one!(domain: Accounts)
+    |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
     OrganizationMembership
     |> Ash.Changeset.for_update(:update, membership, %{role: :owner})
-    |> Ash.update!(domain: Accounts)
+    |> Ash.update!(domain: Accounts, actor: bypass_actor())
 
     # Create instructors
     instructors = Enum.map(1..instructor_count, fn i ->

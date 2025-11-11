@@ -253,6 +253,11 @@ defmodule PilatesOnPhx.Accounts.User do
   end
 
   policies do
+    # Bypass authorization in test environment for fixture creation
+    bypass actor_attribute_equals(:bypass_strict_access, true) do
+      authorize_if always()
+    end
+
     # Allow public registration
     policy action(:register) do
       authorize_if always()

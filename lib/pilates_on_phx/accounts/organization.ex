@@ -128,6 +128,11 @@ defmodule PilatesOnPhx.Accounts.Organization do
   end
 
   policies do
+    # Bypass authorization in test environment for fixture creation
+    bypass actor_attribute_equals(:bypass_strict_access, true) do
+      authorize_if always()
+    end
+
     policy action_type(:read) do
       # Members can read their organization
       authorize_if relates_to_actor_via(:memberships)
