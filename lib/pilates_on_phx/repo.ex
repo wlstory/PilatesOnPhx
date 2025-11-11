@@ -1,9 +1,5 @@
 defmodule PilatesOnPhx.Repo do
-  use Ecto.Repo,
-    otp_app: :pilates_on_phx,
-    adapter: Ecto.Adapters.Postgres
-
-  use AshPostgres.Repo, fragments: []
+  use AshPostgres.Repo, otp_app: :pilates_on_phx
 
   @impl AshPostgres.Repo
   def installed_extensions do
