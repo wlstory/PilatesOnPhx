@@ -50,12 +50,12 @@ defmodule PilatesOnPhx.Accounts.Token do
       public? true
     end
 
-    attribute :token_type, :string do
+    attribute :token_type, :atom do
       allow_nil? false
-      default "bearer"
+      default :bearer
       public? true
       constraints [
-        one_of: ["bearer", "refresh", "password_reset", "email_confirmation"]
+        one_of: [:bearer, :refresh, :password_reset, :email_confirmation]
       ]
     end
 

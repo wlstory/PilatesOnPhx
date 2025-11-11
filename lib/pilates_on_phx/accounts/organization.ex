@@ -43,7 +43,7 @@ defmodule PilatesOnPhx.Accounts.Organization do
       constraints [
         min_length: 1,
         max_length: 255,
-        trim: true
+        trim?: true
       ]
     end
 
