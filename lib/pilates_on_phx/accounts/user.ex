@@ -141,6 +141,38 @@ defmodule PilatesOnPhx.Accounts.User do
 
     # AshAuthentication will add :register_with_password and :sign_in_with_password actions
 
+    # Custom create action for tests and programmatic user creation
+    create :register do
+      accept [:email, :name, :role]
+
+      argument :password, :string do
+        allow_nil? false
+        sensitive? true
+        constraints [min_length: 12]
+      end
+
+      argument :password_confirmation, :string do
+        allow_nil? false
+        sensitive? true
+      end
+
+      validate confirm(:password, :password_confirmation)
+
+      change fn changeset, _context ->
+        case Ash.Changeset.get_argument(changeset, :password) do
+          nil ->
+            changeset
+          password ->
+            case AshAuthentication.BcryptProvider.hash(password) do
+              {:ok, hashed} ->
+                Ash.Changeset.change_attribute(changeset, :hashed_password, hashed)
+              {:error, error} ->
+                Ash.Changeset.add_error(changeset, field: :password, message: "failed to hash: #{inspect(error)}")
+            end
+        end
+      end
+    end
+
     update :update do
       accept [:name, :role, :confirmed_at]
     end

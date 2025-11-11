@@ -81,6 +81,25 @@ defmodule PilatesOnPhx.Accounts.Organization do
     end
   end
 
+  validations do
+    validate fn changeset, _context ->
+      case Ash.Changeset.get_attribute(changeset, :timezone) do
+        nil ->
+          :ok
+
+        timezone ->
+          # Check if it's a valid IANA timezone
+          case Tzdata.zone_exists?(timezone) do
+            true -> :ok
+            false ->
+              {:error,
+               field: :timezone,
+               message: "must be a valid IANA timezone (e.g., 'America/New_York', 'Europe/London')"}
+          end
+      end
+    end
+  end
+
   actions do
     defaults [:read, :destroy]
 

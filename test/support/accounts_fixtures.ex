@@ -47,7 +47,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
     # Create organization - owner will be set via membership
     Organization
     |> Ash.Changeset.for_create(:create, org_attrs)
-    |> Accounts.create!()
+    |> Ash.create!(domain: Accounts)
   end
 
   @doc """
@@ -89,7 +89,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
     # Create user through registration action
     user = User
     |> Ash.Changeset.for_create(:register, user_attrs)
-    |> Accounts.create!()
+    |> Ash.create!(domain: Accounts)
 
     # Create organization membership
     create_organization_membership(user: user, organization: organization)
@@ -98,7 +98,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
     User
     |> Ash.Query.filter(id == ^user.id)
     |> Ash.Query.load(:memberships)
-    |> Accounts.read_one!()
+    |> Ash.read_one!(domain: Accounts)
   end
 
   @doc """
@@ -131,7 +131,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
 
     user = User
     |> Ash.Changeset.for_create(:register, base_attrs)
-    |> Accounts.create!()
+    |> Ash.create!(domain: Accounts)
 
     # Create organization memberships
     organizations = if orgs = attrs[:organizations] do
@@ -149,7 +149,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
     User
     |> Ash.Query.filter(id == ^user.id)
     |> Ash.Query.load([:memberships, :organizations])
-    |> Accounts.read_one!()
+    |> Ash.read_one!(domain: Accounts)
   end
 
   @doc """
@@ -182,7 +182,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
 
     OrganizationMembership
     |> Ash.Changeset.for_create(:create, membership_attrs)
-    |> Accounts.create!()
+    |> Ash.create!(domain: Accounts)
   end
 
   @doc """
@@ -213,7 +213,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
 
     token = Token
     |> Ash.Changeset.for_create(:create, token_attrs)
-    |> Accounts.create!()
+    |> Ash.create!(domain: Accounts)
 
     {user, token}
   end
@@ -247,7 +247,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
 
     Token
     |> Ash.Changeset.for_create(:create, token_attrs)
-    |> Accounts.create!()
+    |> Ash.create!(domain: Accounts)
   end
 
   @doc """
@@ -311,11 +311,11 @@ defmodule PilatesOnPhx.AccountsFixtures do
     # Update membership to owner role
     membership = OrganizationMembership
     |> Ash.Query.filter(user_id == ^owner.id and organization_id == ^organization.id)
-    |> Accounts.read_one!()
+    |> Ash.read_one!(domain: Accounts)
 
     OrganizationMembership
     |> Ash.Changeset.for_update(:update, membership, %{role: :owner})
-    |> Accounts.update!()
+    |> Ash.update!(domain: Accounts)
 
     # Create instructors
     instructors = Enum.map(1..instructor_count, fn i ->
