@@ -85,6 +85,8 @@ defmodule PilatesOnPhx.Accounts.User do
   end
 
   authentication do
+    session_identifier :jti
+
     strategies do
       password :password do
         identity_field :email

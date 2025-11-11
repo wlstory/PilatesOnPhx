@@ -114,7 +114,7 @@ defmodule PilatesOnPhx.Accounts.Organization do
       authorize_if always()
     end
 
-    policy action_type([:update, :activate, :deactivate, :destroy]) do
+    policy action_type([:update, :destroy]) do
       # Only owners can manage the organization
       authorize_if relates_to_actor_via(:memberships)
     end
