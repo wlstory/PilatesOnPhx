@@ -33,6 +33,7 @@
 
 # Mix artifacts
 /_build/
+!/_build/tailwind-linux-x64
 /deps/
 *.ez
 
