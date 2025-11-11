@@ -88,13 +88,15 @@ defmodule PilatesOnPhx.Accounts.Organization do
           :ok
 
         timezone ->
-          # Check if it's a valid IANA timezone
-          case Tzdata.zone_exists?(timezone) do
-            true -> :ok
-            false ->
-              {:error,
-               field: :timezone,
-               message: "must be a valid IANA timezone (e.g., 'America/New_York', 'Europe/London')"}
+          # Basic validation - check if it follows timezone format
+          # More comprehensive validation would require tzdata library
+          if String.match?(timezone, ~r/^[A-Z][A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?$/) ||
+             timezone in ["UTC", "GMT"] do
+            :ok
+          else
+            {:error,
+             field: :timezone,
+             message: "must be a valid IANA timezone (e.g., 'America/New_York', 'Europe/London')"}
           end
       end
     end
@@ -105,20 +107,24 @@ defmodule PilatesOnPhx.Accounts.Organization do
 
     create :create do
       accept [:name, :timezone, :settings, :active]
+      require_atomic? false
     end
 
     update :update do
       accept [:name, :timezone, :settings, :active]
+      require_atomic? false
     end
 
     update :activate do
       accept []
       change set_attribute(:active, true)
+      require_atomic? false
     end
 
     update :deactivate do
       accept []
       change set_attribute(:active, false)
+      require_atomic? false
     end
   end
 
