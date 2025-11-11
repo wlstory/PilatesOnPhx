@@ -80,57 +80,45 @@ defmodule PilatesOnPhx.Accounts do
     resource PilatesOnPhx.Accounts.OrganizationMembership
   end
 
-  # Custom wrapper functions for backward compatibility with tests
-  # These unwrap Ash.Error.Invalid to expose the changeset directly
+  # Wrap Ash functions to provide test compatibility
+  # The tests expect {:error, changeset} but Ash 3.0 returns {:error, %Ash.Error.Invalid{changeset: changeset}}
 
-  def create(changeset, opts \\ []) do
-    case Ash.create(changeset, Keyword.put(opts, :domain, __MODULE__)) do
-      {:error, %Ash.Error.Invalid{changeset: cs}} when not is_binary(cs) ->
+  def create(changeset) do
+    case Ash.create(changeset, domain: __MODULE__) do
+      {:error, %Ash.Error.Invalid{changeset: cs}} when not is_nil(cs) and not is_binary(cs) ->
         {:error, cs}
       other ->
         other
     end
   end
 
-  def create!(changeset, opts \\ []) do
-    Ash.create!(changeset, Keyword.put(opts, :domain, __MODULE__))
-  end
-
-  def update(changeset, opts \\ []) do
-    case Ash.update(changeset, Keyword.put(opts, :domain, __MODULE__)) do
-      {:error, %Ash.Error.Invalid{changeset: cs}} when not is_binary(cs) ->
+  def create(changeset, opts) do
+    opts = Keyword.put(opts, :domain, __MODULE__)
+    case Ash.create(changeset, opts) do
+      {:error, %Ash.Error.Invalid{changeset: cs}} when not is_nil(cs) and not is_binary(cs) ->
         {:error, cs}
       other ->
         other
     end
   end
 
-  def update!(changeset, opts \\ []) do
-    Ash.update!(changeset, Keyword.put(opts, :domain, __MODULE__))
+  def update(changeset_or_record) do
+    case Ash.update(changeset_or_record, domain: __MODULE__) do
+      {:error, %Ash.Error.Invalid{changeset: cs}} when not is_nil(cs) and not is_binary(cs) ->
+        {:error, cs}
+      other ->
+        other
+    end
   end
 
-  def destroy(record, opts \\ []) do
-    Ash.destroy(record, Keyword.put(opts, :domain, __MODULE__))
-  end
-
-  def destroy!(record, opts \\ []) do
-    Ash.destroy!(record, Keyword.put(opts, :domain, __MODULE__))
-  end
-
-  def read(query, opts \\ []) do
-    Ash.read(query, Keyword.put(opts, :domain, __MODULE__))
-  end
-
-  def read!(query, opts \\ []) do
-    Ash.read!(query, Keyword.put(opts, :domain, __MODULE__))
-  end
-
-  def read_one(query, opts \\ []) do
-    Ash.read_one(query, Keyword.put(opts, :domain, __MODULE__))
-  end
-
-  def read_one!(query, opts \\ []) do
-    Ash.read_one!(query, Keyword.put(opts, :domain, __MODULE__))
+  def update(changeset_or_record, opts) do
+    opts = Keyword.put(opts, :domain, __MODULE__)
+    case Ash.update(changeset_or_record, opts) do
+      {:error, %Ash.Error.Invalid{changeset: cs}} when not is_nil(cs) and not is_binary(cs) ->
+        {:error, cs}
+      other ->
+        other
+    end
   end
 
 end
