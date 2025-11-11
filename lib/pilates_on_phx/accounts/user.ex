@@ -144,7 +144,6 @@ defmodule PilatesOnPhx.Accounts.User do
     # Custom create action for tests and programmatic user creation
     create :register do
       accept [:email, :name, :role]
-      require_atomic? false
 
       argument :password, :string do
         allow_nil? false

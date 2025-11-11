@@ -107,7 +107,6 @@ defmodule PilatesOnPhx.Accounts.Organization do
 
     create :create do
       accept [:name, :timezone, :settings, :active]
-      require_atomic? false
     end
 
     update :update do

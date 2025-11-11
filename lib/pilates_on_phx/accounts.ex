@@ -80,4 +80,57 @@ defmodule PilatesOnPhx.Accounts do
     resource PilatesOnPhx.Accounts.OrganizationMembership
   end
 
+  # Custom wrapper functions for backward compatibility with tests
+  # These unwrap Ash.Error.Invalid to expose the changeset directly
+
+  def create(changeset, opts \\ []) do
+    case Ash.create(changeset, Keyword.put(opts, :domain, __MODULE__)) do
+      {:error, %Ash.Error.Invalid{changeset: cs}} when not is_binary(cs) ->
+        {:error, cs}
+      other ->
+        other
+    end
+  end
+
+  def create!(changeset, opts \\ []) do
+    Ash.create!(changeset, Keyword.put(opts, :domain, __MODULE__))
+  end
+
+  def update(changeset, opts \\ []) do
+    case Ash.update(changeset, Keyword.put(opts, :domain, __MODULE__)) do
+      {:error, %Ash.Error.Invalid{changeset: cs}} when not is_binary(cs) ->
+        {:error, cs}
+      other ->
+        other
+    end
+  end
+
+  def update!(changeset, opts \\ []) do
+    Ash.update!(changeset, Keyword.put(opts, :domain, __MODULE__))
+  end
+
+  def destroy(record, opts \\ []) do
+    Ash.destroy(record, Keyword.put(opts, :domain, __MODULE__))
+  end
+
+  def destroy!(record, opts \\ []) do
+    Ash.destroy!(record, Keyword.put(opts, :domain, __MODULE__))
+  end
+
+  def read(query, opts \\ []) do
+    Ash.read(query, Keyword.put(opts, :domain, __MODULE__))
+  end
+
+  def read!(query, opts \\ []) do
+    Ash.read!(query, Keyword.put(opts, :domain, __MODULE__))
+  end
+
+  def read_one(query, opts \\ []) do
+    Ash.read_one(query, Keyword.put(opts, :domain, __MODULE__))
+  end
+
+  def read_one!(query, opts \\ []) do
+    Ash.read_one!(query, Keyword.put(opts, :domain, __MODULE__))
+  end
+
 end
