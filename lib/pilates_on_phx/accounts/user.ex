@@ -149,7 +149,7 @@ defmodule PilatesOnPhx.Accounts.User do
     end
 
     update :change_password do
-      accept [:password, :password_confirmation]
+      accept []
       require_atomic? false
 
       argument :current_password, :string do

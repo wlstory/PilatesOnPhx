@@ -51,9 +51,6 @@ defmodule PilatesOnPhx.Accounts.Organization do
       allow_nil? false
       default "America/New_York"
       public? true
-      constraints [
-        one_of: Tzdata.zone_list()
-      ]
     end
 
     attribute :settings, :map do

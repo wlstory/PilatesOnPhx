@@ -42,13 +42,12 @@ defmodule PilatesOnPhx.Accounts.Token do
   end
 
   attributes do
-    uuid_primary_key :id
-
-    attribute :jti, :string do
-      allow_nil? false
-      default &Ash.UUID.generate/0
-      public? true
-    end
+    # AshAuthentication.TokenResource extension will add:
+    # - jti (JWT ID, string, primary key)
+    # - subject (string, required)
+    # - purpose (string, default "user")
+    # - expires_at (utc_datetime_usec)
+    # - extra_data (map)
 
     attribute :token_type, :atom do
       allow_nil? false
@@ -59,28 +58,10 @@ defmodule PilatesOnPhx.Accounts.Token do
       ]
     end
 
-    attribute :expires_at, :utc_datetime_usec do
-      allow_nil? false
-      public? true
-      default fn ->
-        DateTime.add(DateTime.utc_now(), 3600, :second)  # 1 hour default
-      end
-    end
-
     attribute :revoked_at, :utc_datetime_usec do
       allow_nil? true
       public? true
     end
-
-    attribute :extra_data, :map do
-      allow_nil? false
-      default %{}
-      public? true
-    end
-
-    # AshAuthentication.TokenResource adds these fields:
-    # - subject (required by token resource)
-    # - purpose (required by token resource)
 
     create_timestamp :inserted_at
     update_timestamp :updated_at
@@ -93,15 +74,11 @@ defmodule PilatesOnPhx.Accounts.Token do
     end
   end
 
-  identities do
-    identity :unique_jti, [:jti]
-  end
-
   actions do
     defaults [:read, :destroy]
 
     create :create do
-      accept [:token_type, :expires_at, :extra_data, :jti]
+      accept [:token_type]
       argument :user_id, :uuid, allow_nil?: false
 
       change manage_relationship(:user_id, :user, type: :append_and_remove)
@@ -128,7 +105,7 @@ defmodule PilatesOnPhx.Accounts.Token do
       authorize_if always()
     end
 
-    policy action_type([:revoke, :destroy]) do
+    policy action_type([:update, :destroy]) do
       # Users can revoke/destroy their own tokens
       authorize_if actor_attribute_equals(:id, :user_id)
     end
