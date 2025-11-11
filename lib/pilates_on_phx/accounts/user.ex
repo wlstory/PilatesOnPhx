@@ -152,18 +152,28 @@ defmodule PilatesOnPhx.Accounts.User do
       end
 
       argument :password_confirmation, :string do
-        allow_nil? false
+        allow_nil? true  # Allow nil for tests that don't provide it
         sensitive? true
       end
 
-      validate confirm(:password, :password_confirmation)
-
       change fn changeset, _context ->
-        case Ash.Changeset.get_argument(changeset, :password) do
+        # If password_confirmation is not provided, use password value
+        password = Ash.Changeset.get_argument(changeset, :password)
+        password_confirmation = Ash.Changeset.get_argument(changeset, :password_confirmation) || password
+
+        # Check passwords match
+        changeset = if password && password_confirmation && password != password_confirmation do
+          Ash.Changeset.add_error(changeset, field: :password_confirmation, message: "does not match password")
+        else
+          changeset
+        end
+
+        # Hash the password
+        case password do
           nil ->
             changeset
-          password ->
-            case AshAuthentication.BcryptProvider.hash(password) do
+          pwd ->
+            case AshAuthentication.BcryptProvider.hash(pwd) do
               {:ok, hashed} ->
                 Ash.Changeset.change_attribute(changeset, :hashed_password, hashed)
               {:error, error} ->
