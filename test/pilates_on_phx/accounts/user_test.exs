@@ -300,7 +300,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
 
     test "prevents changing email to existing email" do
       user1 = create_user(email: "user1@example.com")
-      user2 = create_user(email: "user2@example.com")
+      _user2 = create_user(email: "user2@example.com")
 
       assert {:error, %Ash.Error.Invalid{} = error} =
         user1
@@ -330,7 +330,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
       new_password = "NewPassword456!"
       user = create_user(password: old_password)
 
-      assert {:ok, updated} =
+      assert {:ok, _updated} =
         user
         |> Ash.Changeset.for_update(:change_password, %{
           current_password: old_password,

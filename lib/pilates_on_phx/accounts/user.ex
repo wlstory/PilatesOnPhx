@@ -245,6 +245,11 @@ defmodule PilatesOnPhx.Accounts.User do
   validations do
     validate present(:email), on: [:create, :update]
     validate present(:name), on: [:create, :update]
+
+    # Validate email format
+    validate match(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/),
+      message: "must be a valid email address",
+      on: [:create, :update]
   end
 
   policies do
