@@ -74,9 +74,10 @@ defmodule PilatesOnPhx.Accounts do
   use Ash.Domain
 
   resources do
-    # Resources will be added in subsequent issues (PHX-2)
-    # - PilatesOnPhx.Accounts.User
-    # - PilatesOnPhx.Accounts.Organization
-    # - PilatesOnPhx.Accounts.Token
+    resource PilatesOnPhx.Accounts.User
+    resource PilatesOnPhx.Accounts.Organization
+    resource PilatesOnPhx.Accounts.Token
+    resource PilatesOnPhx.Accounts.OrganizationMembership
   end
+
 end
