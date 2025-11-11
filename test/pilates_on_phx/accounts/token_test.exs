@@ -21,7 +21,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       assert {:ok, token} =
         Token
         |> Ash.Changeset.for_create(:create, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert token.user_id == user.id
       assert token.token_type == "bearer"
@@ -38,7 +38,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       assert {:error, changeset} =
         Token
         |> Ash.Changeset.for_create(:create, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert changeset.valid? == false
       assert Enum.any?(changeset.errors, fn error -> error.field == :user_id end)
@@ -72,7 +72,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       assert {:ok, token} =
         Token
         |> Ash.Changeset.for_create(:create, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert token.token_type == "bearer"
     end
@@ -90,7 +90,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       assert {:ok, token} =
         Token
         |> Ash.Changeset.for_create(:create, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Default expiration should be set (e.g., 1 hour from now)
       assert token.expires_at != nil
@@ -109,7 +109,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       assert {:ok, token} =
         Token
         |> Ash.Changeset.for_create(:create, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert token.extra_data == %{} or is_map(token.extra_data)
     end
@@ -131,7 +131,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       assert {:ok, token} =
         Token
         |> Ash.Changeset.for_create(:create, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert token.extra_data["device_id"] == "mobile-123"
       assert token.extra_data["ip_address"] == "192.168.1.1"
@@ -150,7 +150,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       assert {:error, changeset} =
         Token
         |> Ash.Changeset.for_create(:create, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert changeset.valid? == false
     end
@@ -165,7 +165,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       tokens =
         Token
         |> Ash.Query.filter(user_id == ^user.id)
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       token_ids = Enum.map(tokens, & &1.id)
       assert token1.id in token_ids
@@ -194,7 +194,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       assert {:ok, token} =
         Token
         |> Ash.Changeset.for_create(:create, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert token.token_type == "refresh"
     end
@@ -211,7 +211,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       assert {:ok, token} =
         Token
         |> Ash.Changeset.for_create(:create, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert token.token_type == "password_reset"
     end
@@ -228,7 +228,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       assert {:ok, token} =
         Token
         |> Ash.Changeset.for_create(:create, attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert token.token_type == "email_confirmation"
     end
@@ -270,7 +270,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       active_tokens =
         Token
         |> Ash.Query.filter(user_id == ^user.id and expires_at > ^now)
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       assert length(active_tokens) >= 2
 
@@ -294,7 +294,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       expired_tokens =
         Token
         |> Ash.Query.filter(user_id == ^user.id and expires_at <= ^now)
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       assert length(expired_tokens) >= 2
 
@@ -363,7 +363,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       active_tokens =
         Token
         |> Ash.Query.filter(user_id == ^user.id and is_nil(revoked_at))
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       token_ids = Enum.map(active_tokens, & &1.id)
       assert active1.id in token_ids
@@ -391,7 +391,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       revoked_tokens =
         Token
         |> Ash.Query.filter(user_id == ^user.id and not is_nil(revoked_at))
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       assert length(revoked_tokens) >= 2
     end
@@ -437,7 +437,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       active_tokens =
         Token
         |> Ash.Query.filter(user_id == ^user.id and is_nil(revoked_at))
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       assert active_tokens == []
     end
@@ -490,7 +490,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       remaining_tokens =
         Token
         |> Ash.Query.filter(id in ^[token1.id, token2.id])
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       assert remaining_tokens == []
     end
@@ -507,7 +507,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       tokens =
         Token
         |> Ash.Query.filter(user_id == ^user.id)
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       assert length(tokens) >= 3
     end
@@ -531,7 +531,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       bearer_tokens =
         Token
         |> Ash.Query.filter(user_id == ^user.id and token_type == "bearer")
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       assert length(bearer_tokens) >= 2
       assert Enum.all?(bearer_tokens, fn t -> t.token_type == "bearer" end)
@@ -573,7 +573,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
           expires_at > ^now and
           is_nil(revoked_at)
         )
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       token_ids = Enum.map(valid_tokens, & &1.id)
       assert valid_token.id in token_ids
@@ -693,7 +693,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       user1_tokens =
         Token
         |> Ash.Query.filter(user_id == ^user1.id)
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       user1_token_ids = Enum.map(user1_tokens, & &1.id)
 
@@ -780,7 +780,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       old_expired =
         Token
         |> Ash.Query.filter(expires_at < ^cutoff)
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       # Delete old expired tokens
       Enum.each(old_expired, fn token ->
@@ -811,7 +811,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       old_revoked_tokens =
         Token
         |> Ash.Query.filter(not is_nil(revoked_at) and revoked_at < ^cutoff)
-        |> Accounts.read!()
+        |> Ash.read!(domain: Accounts)
 
       # Should find the old revoked token
       token_ids = Enum.map(old_revoked_tokens, & &1.id)

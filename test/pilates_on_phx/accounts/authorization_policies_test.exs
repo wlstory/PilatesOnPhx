@@ -30,7 +30,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:ok, loaded} =
         User
         |> Ash.Query.filter(id == ^user_org1.id)
-        |> Accounts.read_one(actor: user_org1)
+        |> Ash.read_one(domain: Accounts, actor: user_org1)
 
       assert loaded.id == user_org1.id
 
@@ -38,7 +38,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:error, %Ash.Error.Forbidden{}} =
         User
         |> Ash.Query.filter(id == ^user_org2.id)
-        |> Accounts.read_one(actor: user_org1)
+        |> Ash.read_one(domain: Accounts, actor: user_org1)
     end
 
     test "users can only list users within their organization" do
@@ -55,7 +55,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       # User from org1 queries all users
       users_visible_to_org1 =
         User
-        |> Accounts.read!(actor: user1_org1)
+        |> Ash.read!(domain: Accounts, actor: user1_org1)
 
       user_ids = Enum.map(users_visible_to_org1, & &1.id)
 
@@ -80,7 +80,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:ok, loaded_org1} =
         Organization
         |> Ash.Query.filter(id == ^org1.id)
-        |> Accounts.read_one(actor: user1)
+        |> Ash.read_one(domain: Accounts, actor: user1)
 
       assert loaded_org1.id == org1.id
 
@@ -88,13 +88,13 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:error, %Ash.Error.Forbidden{}} =
         Organization
         |> Ash.Query.filter(id == ^org2.id)
-        |> Accounts.read_one(actor: user1)
+        |> Ash.read_one(domain: Accounts, actor: user1)
 
       # User2 can access their organization
       assert {:ok, loaded_org2} =
         Organization
         |> Ash.Query.filter(id == ^org2.id)
-        |> Accounts.read_one(actor: user2)
+        |> Ash.read_one(domain: Accounts, actor: user2)
 
       assert loaded_org2.id == org2.id
 
@@ -102,7 +102,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:error, %Ash.Error.Forbidden{}} =
         Organization
         |> Ash.Query.filter(id == ^org1.id)
-        |> Accounts.read_one(actor: user2)
+        |> Ash.read_one(domain: Accounts, actor: user2)
     end
 
     test "memberships are scoped to actor's organization" do
@@ -117,7 +117,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       # User1 queries memberships
       visible_memberships =
         OrganizationMembership
-        |> Accounts.read!(actor: user1)
+        |> Ash.read!(domain: Accounts, actor: user1)
 
       membership_org_ids = Enum.map(visible_memberships, & &1.organization_id)
 
@@ -139,7 +139,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:ok, loaded_token} =
         Token
         |> Ash.Query.filter(id == ^token1.id)
-        |> Accounts.read_one(actor: user1)
+        |> Ash.read_one(domain: Accounts, actor: user1)
 
       assert loaded_token.id == token1.id
 
@@ -147,7 +147,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:error, %Ash.Error.Forbidden{}} =
         Token
         |> Ash.Query.filter(id == ^token2.id)
-        |> Accounts.read_one(actor: user1)
+        |> Ash.read_one(domain: Accounts, actor: user1)
     end
   end
 
@@ -250,7 +250,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       # Owner can see all users in organization
       org_users =
         User
-        |> Accounts.read!(actor: owner)
+        |> Ash.read!(domain: Accounts, actor: owner)
 
       # Should see at least owner + instructors + clients
       assert length(org_users) >= 14
@@ -266,7 +266,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:ok, loaded_org} =
         Organization
         |> Ash.Query.filter(id == ^org.id)
-        |> Accounts.read_one(actor: instructor)
+        |> Ash.read_one(domain: Accounts, actor: instructor)
 
       assert loaded_org.id == org.id
 
@@ -285,7 +285,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       # Instructor can see other members
       members =
         User
-        |> Accounts.read!(actor: instructor)
+        |> Ash.read!(domain: Accounts, actor: instructor)
 
       member_ids = Enum.map(members, & &1.id)
       assert client.id in member_ids
@@ -322,7 +322,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:ok, loaded_org} =
         Organization
         |> Ash.Query.filter(id == ^org.id)
-        |> Accounts.read_one(actor: client)
+        |> Ash.read_one(domain: Accounts, actor: client)
 
       assert loaded_org.id == org.id
 
@@ -341,7 +341,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       # Client can see other members
       members =
         User
-        |> Accounts.read!(actor: client)
+        |> Ash.read!(domain: Accounts, actor: client)
 
       member_ids = Enum.map(members, & &1.id)
       assert other_client.id in member_ids
@@ -455,13 +455,13 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:error, %Ash.Error.Forbidden{}} =
         Organization
         |> Ash.Query.filter(id == ^studio_b.id)
-        |> Accounts.read_one(actor: instructor_a)
+        |> Ash.read_one(domain: Accounts, actor: instructor_a)
 
       # Instructor A cannot access users from Studio B
       assert {:error, %Ash.Error.Forbidden{}} =
         User
         |> Ash.Query.filter(id == ^instructor_b.id)
-        |> Accounts.read_one(actor: instructor_a)
+        |> Ash.read_one(domain: Accounts, actor: instructor_a)
     end
 
     test "owner of studio A cannot manage studio B" do
@@ -503,7 +503,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       # Client1 queries users
       visible_users =
         User
-        |> Accounts.read!(actor: client1)
+        |> Ash.read!(domain: Accounts, actor: client1)
 
       user_ids = Enum.map(visible_users, & &1.id)
 
@@ -527,17 +527,17 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:ok, loaded_org1} =
         Organization
         |> Ash.Query.filter(id == ^org1.id)
-        |> Accounts.read_one(actor: multi_org_user)
+        |> Ash.read_one(domain: Accounts, actor: multi_org_user)
 
       assert {:ok, loaded_org2} =
         Organization
         |> Ash.Query.filter(id == ^org2.id)
-        |> Accounts.read_one(actor: multi_org_user)
+        |> Ash.read_one(domain: Accounts, actor: multi_org_user)
 
       assert {:ok, loaded_org3} =
         Organization
         |> Ash.Query.filter(id == ^org3.id)
-        |> Accounts.read_one(actor: multi_org_user)
+        |> Ash.read_one(domain: Accounts, actor: multi_org_user)
 
       assert loaded_org1.id == org1.id
       assert loaded_org2.id == org2.id
@@ -582,7 +582,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:ok, _} =
         Organization
         |> Ash.Query.filter(id == ^org.id)
-        |> Accounts.read_one(actor: user)
+        |> Ash.read_one(domain: Accounts, actor: user)
 
       # Remove membership
       Accounts.destroy(membership)
@@ -591,7 +591,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:error, %Ash.Error.Forbidden{}} =
         Organization
         |> Ash.Query.filter(id == ^org.id)
-        |> Accounts.read_one(actor: user)
+        |> Ash.read_one(domain: Accounts, actor: user)
     end
   end
 
@@ -657,7 +657,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:ok, loaded} =
         Organization
         |> Ash.Query.filter(id == ^deactivated_org.id)
-        |> Accounts.read_one(actor: user)
+        |> Ash.read_one(domain: Accounts, actor: user)
 
       assert loaded.active == false
     end
@@ -695,7 +695,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:ok, _} =
         Organization
         |> Ash.Query.filter(id == ^org.id)
-        |> Accounts.read_one(actor: user)
+        |> Ash.read_one(domain: Accounts, actor: user)
 
       # Delete all memberships
       OrganizationMembership
@@ -707,7 +707,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:error, %Ash.Error.Forbidden{}} =
         Organization
         |> Ash.Query.filter(id == ^org.id)
-        |> Accounts.read_one(actor: user)
+        |> Ash.read_one(domain: Accounts, actor: user)
     end
 
     test "deleted user's tokens are inaccessible" do
@@ -735,7 +735,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
         Task.async(fn ->
           Organization
           |> Ash.Query.filter(id == ^org.id)
-          |> Accounts.read_one(actor: user)
+          |> Ash.read_one(domain: Accounts, actor: user)
         end)
       end)
 
@@ -765,7 +765,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       assert {:error, %Ash.Error.Forbidden{}} =
         Organization
         |> Ash.Query.filter(id == ^org.id)
-        |> Accounts.read_one(actor: user)
+        |> Ash.read_one(domain: Accounts, actor: user)
     end
   end
 end

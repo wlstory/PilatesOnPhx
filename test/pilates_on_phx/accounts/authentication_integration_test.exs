@@ -32,7 +32,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, user} =
         User
         |> Ash.Changeset.for_create(:register, registration_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Step 2: Create organization for the new user
       org_attrs = %{
@@ -43,7 +43,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, organization} =
         Organization
         |> Ash.Changeset.for_create(:create, org_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Step 3: Create membership linking user to organization
       membership_attrs = %{
@@ -56,7 +56,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, membership} =
         Accounts.OrganizationMembership
         |> Ash.Changeset.for_create(:create, membership_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Step 4: Generate authentication token
       token_attrs = %{
@@ -68,7 +68,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, token} =
         Token
         |> Ash.Changeset.for_create(:create, token_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Verify complete setup
       assert user.email == "newstudio@example.com"
@@ -85,7 +85,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         User
         |> Ash.Query.filter(id == ^user.id)
         |> Ash.Query.load([:memberships, :organizations, :tokens])
-        |> Accounts.read_one!()
+        |> Ash.read_one!(domain: Accounts)
 
       assert length(loaded_user.memberships) == 1
       assert length(loaded_user.organizations) == 1
@@ -106,7 +106,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, instructor} =
         User
         |> Ash.Changeset.for_create(:register, registration_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Add to existing organization
       {:ok, membership} =
@@ -117,7 +117,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
           role: :member,
           joined_at: DateTime.utc_now()
         })
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert instructor.role == :instructor
       assert membership.organization_id == existing_org.id
@@ -138,7 +138,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, client} =
         User
         |> Ash.Changeset.for_create(:register, registration_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Join studio
       {:ok, membership} =
@@ -149,7 +149,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
           role: :member,
           joined_at: DateTime.utc_now()
         })
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert client.role == :client
       assert membership.role == :member
@@ -166,7 +166,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
           password: "Password123!",
           name: "First User"
         })
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Duplicate registration
       {:error, changeset} =
@@ -176,7 +176,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
           password: "Password456!",
           name: "Second User"
         })
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert changeset.valid? == false
       assert Enum.any?(changeset.errors, fn error ->
@@ -210,7 +210,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, token} =
         Token
         |> Ash.Changeset.for_create(:create, token_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Verify successful login
       assert authenticated_user.id == user.id
@@ -266,7 +266,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         User
         |> Ash.Query.filter(id == ^authenticated.id)
         |> Ash.Query.load([:organizations, :memberships])
-        |> Accounts.read_one!()
+        |> Ash.read_one!(domain: Accounts)
 
       # User should have access to all their organizations
       assert length(loaded_user.organizations) == 3
@@ -316,7 +316,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, refresh_token} =
         Token
         |> Ash.Changeset.for_create(:create, refresh_token_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Step 3: Use refresh token to generate new bearer token
       new_bearer_attrs = %{
@@ -328,7 +328,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, new_bearer_token} =
         Token
         |> Ash.Changeset.for_create(:create, new_bearer_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Step 4: Revoke old bearer token
       {:ok, revoked_initial} =
@@ -387,7 +387,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, refresh_token} =
         Token
         |> Ash.Changeset.for_create(:create, refresh_token_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       {:ok, revoked_refresh} =
         refresh_token
@@ -428,7 +428,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, refresh_token} =
         Token
         |> Ash.Changeset.for_create(:create, refresh_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Revoke all tokens (logout)
       now = DateTime.utc_now()
@@ -478,7 +478,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       device2_still_active =
         Token
         |> Ash.Query.filter(id == ^device2_token.id)
-        |> Accounts.read_one!()
+        |> Ash.read_one!(domain: Accounts)
 
       assert device2_still_active.revoked_at == nil
     end
@@ -498,7 +498,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, reset_token} =
         Token
         |> Ash.Changeset.for_create(:create, reset_token_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Step 2: Verify reset token is valid
       assert reset_token.token_type == "password_reset"
@@ -570,7 +570,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, reset_token} =
         Token
         |> Ash.Changeset.for_create(:create, reset_token_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Token is initially valid
       assert DateTime.compare(reset_token.expires_at, DateTime.utc_now()) == :gt
@@ -595,7 +595,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, reset_token} =
         Token
         |> Ash.Changeset.for_create(:create, reset_token_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Use token to reset password
       {:ok, _updated} =
@@ -639,7 +639,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
           password: "SecurePassword123!",
           name: "Unconfirmed User"
         })
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       assert user.confirmed_at == nil
 
@@ -653,7 +653,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, confirmation_token} =
         Token
         |> Ash.Changeset.for_create(:create, confirmation_token_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Step 3: User clicks confirmation link and confirms email
       confirmed_at = DateTime.utc_now()
@@ -687,7 +687,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, confirmation_token} =
         Token
         |> Ash.Changeset.for_create(:create, confirmation_token_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Token is initially valid
       assert DateTime.compare(confirmation_token.expires_at, DateTime.utc_now()) == :gt
@@ -712,7 +712,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, token1} =
         Token
         |> Ash.Changeset.for_create(:create, token1_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Revoke old token
       {:ok, _revoked} =
@@ -730,7 +730,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       {:ok, token2} =
         Token
         |> Ash.Changeset.for_create(:create, token2_attrs)
-        |> Accounts.create()
+        |> Ash.create(domain: Accounts)
 
       # Both tokens should exist
       assert token1.id != token2.id
@@ -785,7 +785,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         User
         |> Ash.Query.filter(id == ^authenticated.id)
         |> Ash.Query.load([:organizations, :memberships])
-        |> Accounts.read_one!()
+        |> Ash.read_one!(domain: Accounts)
 
       # Verify access to all organizations
       assert length(loaded_user.organizations) == 3
@@ -806,7 +806,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         User
         |> Ash.Query.filter(id == ^user.id)
         |> Ash.Query.load(:organizations)
-        |> Accounts.read_one!()
+        |> Ash.read_one!(domain: Accounts)
 
       [org1, org2] = loaded_user.organizations
 
