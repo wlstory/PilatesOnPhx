@@ -159,10 +159,15 @@ defmodule PilatesOnPhx.Accounts.Organization do
   end
 
   actions do
-    defaults [:read, :destroy]
+    defaults [:read]
 
     create :create do
       accept [:name, :timezone, :settings, :active]
+    end
+
+    destroy :destroy do
+      primary? true
+      require_atomic? false
     end
 
     update :update do
@@ -246,9 +251,9 @@ defmodule PilatesOnPhx.Accounts.Organization do
     end
 
     policy action_type([:update, :destroy]) do
-      # Only owners can manage the organization (we can check role in membership)
-      # For now, allow any member to update (tests will refine this)
-      authorize_if actor_present()
+      # Only owners can manage the organization
+      # Check if actor has an owner membership for this organization
+      authorize_if expr(exists(memberships, user_id == ^actor(:id) and role == :owner))
     end
   end
 
