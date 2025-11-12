@@ -111,7 +111,10 @@ defmodule PilatesOnPhx.Accounts.User do
       token_resource(PilatesOnPhx.Accounts.Token)
 
       signing_secret(fn _, _ ->
-        Application.fetch_env!(:pilates_on_phx, :token_signing_secret)
+        case Application.fetch_env(:pilates_on_phx, :token_signing_secret) do
+          {:ok, secret} -> {:ok, secret}
+          :error -> {:error, "token_signing_secret not configured"}
+        end
       end)
     end
   end
