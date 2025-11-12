@@ -78,10 +78,17 @@ defmodule PilatesOnPhx.Accounts.Token do
     defaults [:read, :destroy]
 
     create :create do
-      accept [:token_type]
+      accept [:token_type, :expires_at, :extra_data, :subject, :purpose]
       argument :user_id, :uuid, allow_nil?: false
 
       change manage_relationship(:user_id, :user, type: :append_and_remove)
+
+      # Set defaults for AshAuthentication fields if not provided
+      change fn changeset, _ ->
+        changeset
+        |> Ash.Changeset.change_new_attribute(:purpose, "user")
+        |> Ash.Changeset.change_new_attribute(:subject, to_string(changeset.arguments[:user_id] || ""))
+      end
     end
 
     update :revoke do
