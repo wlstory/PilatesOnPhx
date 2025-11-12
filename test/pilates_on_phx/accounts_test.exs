@@ -54,9 +54,21 @@ defmodule PilatesOnPhx.AccountsTest do
       assert is_list(resources),
              "resources should return a list"
 
-      # Initially empty, but should be a valid list structure
-      assert resources == [],
-             "Resources list should be empty initially"
+      # Should contain the core account resources
+      assert length(resources) > 0,
+             "Resources list should not be empty"
+
+      expected_resources = [
+        PilatesOnPhx.Accounts.User,
+        PilatesOnPhx.Accounts.Organization,
+        PilatesOnPhx.Accounts.Token,
+        PilatesOnPhx.Accounts.OrganizationMembership
+      ]
+
+      Enum.each(expected_resources, fn resource ->
+        assert resource in resources,
+               "#{inspect(resource)} should be in domain resources"
+      end)
     end
   end
 

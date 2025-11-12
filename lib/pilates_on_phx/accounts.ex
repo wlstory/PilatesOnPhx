@@ -33,7 +33,7 @@ defmodule PilatesOnPhx.Accounts do
 
       policies do
         policy action_type(:read) do
-          authorize_if actor_attribute_equals(:organization_id, :organization_id)
+          authorize_if expr(organization_id == ^actor(:organization_id))
         end
       end
 
@@ -74,9 +74,9 @@ defmodule PilatesOnPhx.Accounts do
   use Ash.Domain
 
   resources do
-    # Resources will be added in subsequent issues (PHX-2)
-    # - PilatesOnPhx.Accounts.User
-    # - PilatesOnPhx.Accounts.Organization
-    # - PilatesOnPhx.Accounts.Token
+    resource PilatesOnPhx.Accounts.User
+    resource PilatesOnPhx.Accounts.Organization
+    resource PilatesOnPhx.Accounts.Token
+    resource PilatesOnPhx.Accounts.OrganizationMembership
   end
 end

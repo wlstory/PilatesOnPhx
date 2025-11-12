@@ -30,7 +30,7 @@ defmodule PilatesOnPhx.Studios do
 
       policies do
         policy action_type(:read) do
-          authorize_if actor_attribute_equals(:organization_id, :organization_id)
+          authorize_if expr(organization_id == ^actor(:organization_id))
         end
       end
 
