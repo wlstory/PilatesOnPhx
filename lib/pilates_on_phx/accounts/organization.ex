@@ -134,7 +134,10 @@ defmodule PilatesOnPhx.Accounts.Organization do
 
       actor = Map.get(context, :actor)
 
-      if actor && !Map.get(actor, :bypass_strict_access, false) do
+      # Don't filter if this is a relationship load (accessing_from is set)
+      accessing_from = Map.get(context, :accessing_from)
+
+      if actor && !Map.get(actor, :bypass_strict_access, false) && is_nil(accessing_from) do
         # Get actor's organization IDs from loaded memberships
         actor_id = actor.id
 
