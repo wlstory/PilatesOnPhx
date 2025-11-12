@@ -231,7 +231,7 @@ defmodule PilatesOnPhx.Accounts.Organization do
 
   policies do
     # Bypass authorization in test environment for fixture creation
-    bypass actor_attribute_equals(:bypass_strict_access, true) do
+    bypass expr(^actor(:bypass_strict_access) == true) do
       authorize_if always()
     end
 

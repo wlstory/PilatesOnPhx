@@ -115,13 +115,13 @@ defmodule PilatesOnPhx.Accounts.Token do
 
   policies do
     # Bypass authorization in test environment for fixture creation
-    bypass actor_attribute_equals(:bypass_strict_access, true) do
+    bypass expr(^actor(:bypass_strict_access) == true) do
       authorize_if always()
     end
 
     policy action_type(:read) do
       # Users can only access their own tokens
-      authorize_if actor_attribute_equals(:id, :user_id)
+      authorize_if expr(user_id == ^actor(:id))
     end
 
     policy action_type(:create) do
@@ -131,7 +131,7 @@ defmodule PilatesOnPhx.Accounts.Token do
 
     policy action_type([:update, :destroy]) do
       # Users can revoke/destroy their own tokens
-      authorize_if actor_attribute_equals(:id, :user_id)
+      authorize_if expr(user_id == ^actor(:id))
     end
   end
 

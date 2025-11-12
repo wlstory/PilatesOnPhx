@@ -330,7 +330,7 @@ defmodule PilatesOnPhx.Accounts.User do
 
   policies do
     # Bypass authorization in test environment for fixture creation
-    bypass actor_attribute_equals(:bypass_strict_access, true) do
+    bypass expr(^actor(:bypass_strict_access) == true) do
       authorize_if always()
     end
 
@@ -343,7 +343,7 @@ defmodule PilatesOnPhx.Accounts.User do
       # Allow system reads (no actor) for relationship validation during token creation
       authorize_unless actor_present()
       # Users can read themselves
-      authorize_if actor_attribute_equals(:id, :id)
+      authorize_if expr(id == ^actor(:id))
       # Users can read other users in their organizations
       # This authorizes the action but filtering will limit results to shared orgs
       authorize_if actor_present()
@@ -351,7 +351,7 @@ defmodule PilatesOnPhx.Accounts.User do
 
     policy action_type([:update, :destroy]) do
       # Users can only manage themselves
-      authorize_if actor_attribute_equals(:id, :id)
+      authorize_if expr(id == ^actor(:id))
     end
   end
 

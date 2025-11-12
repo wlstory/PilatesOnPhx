@@ -117,7 +117,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
 
   policies do
     # Bypass authorization in test environment for fixture creation
-    bypass actor_attribute_equals(:bypass_strict_access, true) do
+    bypass expr(^actor(:bypass_strict_access) == true) do
       authorize_if always()
     end
 
@@ -138,7 +138,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
 
     policy action_type([:update, :destroy]) do
       # Users can remove their own memberships (except owners)
-      authorize_if actor_attribute_equals(:id, :user_id)
+      authorize_if expr(user_id == ^actor(:id))
     end
   end
 
