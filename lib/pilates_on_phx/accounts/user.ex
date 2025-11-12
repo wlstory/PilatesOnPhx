@@ -62,10 +62,9 @@ defmodule PilatesOnPhx.Accounts.User do
     attribute :name, :string do
       allow_nil? false
       public? true
-      constraints [
-        min_length: 1,
-        max_length: 255
-      ]
+
+      constraints min_length: 1,
+                  max_length: 255
     end
 
     attribute :role, :atom do
@@ -85,34 +84,35 @@ defmodule PilatesOnPhx.Accounts.User do
   end
 
   authentication do
-    session_identifier :jti
+    session_identifier(:jti)
 
     strategies do
       password :password do
-        identity_field :email
-        hashed_password_field :hashed_password
-        hash_provider AshAuthentication.BcryptProvider
+        identity_field(:email)
+        hashed_password_field(:hashed_password)
+        hash_provider(AshAuthentication.BcryptProvider)
 
-        sign_in_tokens_enabled? true
+        sign_in_tokens_enabled?(true)
 
         resettable do
-          sender fn user, token, _opts ->
+          sender(fn user, token, _opts ->
             # TODO: Implement email sending
             # For now, just log the token
             require Logger
             Logger.info("Password reset token for #{user.email}: #{token}")
             :ok
-          end
+          end)
         end
       end
     end
 
     tokens do
-      enabled? true
-      token_resource PilatesOnPhx.Accounts.Token
-      signing_secret fn _, _ ->
+      enabled?(true)
+      token_resource(PilatesOnPhx.Accounts.Token)
+
+      signing_secret(fn _, _ ->
         Application.fetch_env!(:pilates_on_phx, :token_signing_secret)
-      end
+      end)
     end
   end
 
@@ -151,18 +151,24 @@ defmodule PilatesOnPhx.Accounts.User do
         actor = context.actor
         actor_id = actor.id
 
-        actor_org_ids = case Map.get(actor, :memberships) do
-          nil ->
-            # Try to load memberships
-            case Ash.load(actor, :memberships) do
-              {:ok, loaded_actor} ->
-                Enum.map(loaded_actor.memberships || [], & &1.organization_id)
-              _ -> []
-            end
-          memberships when is_list(memberships) ->
-            Enum.map(memberships, & &1.organization_id)
-          _ -> []
-        end
+        actor_org_ids =
+          case Map.get(actor, :memberships) do
+            nil ->
+              # Try to load memberships
+              case Ash.load(actor, :memberships) do
+                {:ok, loaded_actor} ->
+                  Enum.map(loaded_actor.memberships || [], & &1.organization_id)
+
+                _ ->
+                  []
+              end
+
+            memberships when is_list(memberships) ->
+              Enum.map(memberships, & &1.organization_id)
+
+            _ ->
+              []
+          end
 
         if Enum.empty?(actor_org_ids) do
           # If actor has no organizations, they can only see themselves
@@ -170,9 +176,10 @@ defmodule PilatesOnPhx.Accounts.User do
         else
           # Filter to users who share at least one organization
           # Use a subquery-style exists check
-          Ash.Query.filter(query,
+          Ash.Query.filter(
+            query,
             id == ^actor_id or
-            exists(memberships, organization_id in ^actor_org_ids)
+              exists(memberships, organization_id in ^actor_org_ids)
           )
         end
       else
@@ -193,36 +200,48 @@ defmodule PilatesOnPhx.Accounts.User do
       argument :password, :string do
         allow_nil? false
         sensitive? true
-        constraints [min_length: 12]
+        constraints min_length: 12
       end
 
       argument :password_confirmation, :string do
-        allow_nil? true  # Allow nil for tests that don't provide it
+        # Allow nil for tests that don't provide it
+        allow_nil? true
         sensitive? true
       end
 
       change fn changeset, _context ->
         # If password_confirmation is not provided, use password value
         password = Ash.Changeset.get_argument(changeset, :password)
-        password_confirmation = Ash.Changeset.get_argument(changeset, :password_confirmation) || password
+
+        password_confirmation =
+          Ash.Changeset.get_argument(changeset, :password_confirmation) || password
 
         # Check passwords match
-        changeset = if password && password_confirmation && password != password_confirmation do
-          Ash.Changeset.add_error(changeset, field: :password_confirmation, message: "does not match password")
-        else
-          changeset
-        end
+        changeset =
+          if password && password_confirmation && password != password_confirmation do
+            Ash.Changeset.add_error(changeset,
+              field: :password_confirmation,
+              message: "does not match password"
+            )
+          else
+            changeset
+          end
 
         # Hash the password
         case password do
           nil ->
             changeset
+
           pwd ->
             case AshAuthentication.BcryptProvider.hash(pwd) do
               {:ok, hashed} ->
                 Ash.Changeset.change_attribute(changeset, :hashed_password, hashed)
+
               {:error, error} ->
-                Ash.Changeset.add_error(changeset, field: :password, message: "failed to hash: #{inspect(error)}")
+                Ash.Changeset.add_error(changeset,
+                  field: :password,
+                  message: "failed to hash: #{inspect(error)}"
+                )
             end
         end
       end
@@ -250,7 +269,7 @@ defmodule PilatesOnPhx.Accounts.User do
       argument :password, :string do
         allow_nil? false
         sensitive? true
-        constraints [min_length: 12]
+        constraints min_length: 12
       end
 
       argument :password_confirmation, :string do
@@ -272,16 +291,24 @@ defmodule PilatesOnPhx.Accounts.User do
             case AshAuthentication.BcryptProvider.valid?(current_password, user.hashed_password) do
               {:ok, true} ->
                 # Hash new password
-                case AshAuthentication.BcryptProvider.hash(Ash.Changeset.get_argument(changeset, :password)) do
+                case AshAuthentication.BcryptProvider.hash(
+                       Ash.Changeset.get_argument(changeset, :password)
+                     ) do
                   {:ok, hashed} ->
                     Ash.Changeset.change_attribute(changeset, :hashed_password, hashed)
 
                   {:error, error} ->
-                    Ash.Changeset.add_error(changeset, field: :password, message: "failed to hash: #{inspect(error)}")
+                    Ash.Changeset.add_error(changeset,
+                      field: :password,
+                      message: "failed to hash: #{inspect(error)}"
+                    )
                 end
 
               _ ->
-                Ash.Changeset.add_error(changeset, field: :current_password, message: "is incorrect")
+                Ash.Changeset.add_error(changeset,
+                  field: :current_password,
+                  message: "is incorrect"
+                )
             end
         end
       end

@@ -20,9 +20,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       }
 
       assert {:ok, membership} =
-        OrganizationMembership
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               OrganizationMembership
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert membership.user_id == user.id
       assert membership.organization_id == org.id
@@ -39,9 +39,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       }
 
       assert {:error, %Ash.Error.Invalid{} = error} =
-        OrganizationMembership
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               OrganizationMembership
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert Enum.any?(error.errors, fn err -> err.field == :user_id end)
     end
@@ -55,9 +55,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       }
 
       assert {:error, %Ash.Error.Invalid{} = error} =
-        OrganizationMembership
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               OrganizationMembership
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert Enum.any?(error.errors, fn err -> err.field == :organization_id end)
     end
@@ -73,9 +73,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       }
 
       assert {:ok, membership} =
-        OrganizationMembership
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               OrganizationMembership
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert membership.role == :member
     end
@@ -93,9 +93,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       }
 
       assert {:ok, membership} =
-        OrganizationMembership
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               OrganizationMembership
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       after_create = DateTime.utc_now()
 
@@ -116,19 +116,19 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       }
 
       assert {:ok, _membership} =
-        OrganizationMembership
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               OrganizationMembership
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       # Attempt duplicate membership
       assert {:error, %Ash.Error.Invalid{} = error} =
-        OrganizationMembership
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               OrganizationMembership
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert Enum.any?(error.errors, fn err ->
-        err.message =~ "unique" or err.message =~ "already been taken"
-      end)
+               err.message =~ "unique" or err.message =~ "already been taken"
+             end)
     end
 
     test "allows same user to join multiple organizations" do
@@ -183,9 +183,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       }
 
       assert {:error, %Ash.Error.Invalid{}} =
-        OrganizationMembership
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               OrganizationMembership
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
     end
 
     test "validates organization exists" do
@@ -199,39 +199,42 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       }
 
       assert {:error, %Ash.Error.Invalid{}} =
-        OrganizationMembership
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               OrganizationMembership
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
     end
   end
 
   describe "membership roles" do
     test "supports owner role" do
-      membership = create_organization_membership(
-        user: create_user(),
-        organization: create_organization(),
-        role: :owner
-      )
+      membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: create_organization(),
+          role: :owner
+        )
 
       assert membership.role == :owner
     end
 
     test "supports admin role" do
-      membership = create_organization_membership(
-        user: create_user(),
-        organization: create_organization(),
-        role: :admin
-      )
+      membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: create_organization(),
+          role: :admin
+        )
 
       assert membership.role == :admin
     end
 
     test "supports member role" do
-      membership = create_organization_membership(
-        user: create_user(),
-        organization: create_organization(),
-        role: :member
-      )
+      membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: create_organization(),
+          role: :member
+        )
 
       assert membership.role == :member
     end
@@ -247,9 +250,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       }
 
       assert {:error, %Ash.Error.Invalid{}} =
-        OrganizationMembership
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               OrganizationMembership
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
     end
 
     test "user can have different roles in different organizations" do
@@ -259,25 +262,28 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       org3 = create_organization()
 
       # Owner in first org
-      mem1 = create_organization_membership(
-        user: user,
-        organization: org1,
-        role: :owner
-      )
+      mem1 =
+        create_organization_membership(
+          user: user,
+          organization: org1,
+          role: :owner
+        )
 
       # Admin in second org
-      mem2 = create_organization_membership(
-        user: user,
-        organization: org2,
-        role: :admin
-      )
+      mem2 =
+        create_organization_membership(
+          user: user,
+          organization: org2,
+          role: :admin
+        )
 
       # Member in third org
-      mem3 = create_organization_membership(
-        user: user,
-        organization: org3,
-        role: :member
-      )
+      mem3 =
+        create_organization_membership(
+          user: user,
+          organization: org3,
+          role: :member
+        )
 
       assert mem1.role == :owner
       assert mem2.role == :admin
@@ -287,63 +293,68 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
 
   describe "membership updates (action: update)" do
     test "can update membership role" do
-      membership = create_organization_membership(
-        user: create_user(),
-        organization: create_organization(),
-        role: :member
-      )
+      membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: create_organization(),
+          role: :member
+        )
 
       assert {:ok, updated} =
-        membership
-        |> Ash.Changeset.for_update(:update, %{role: :admin}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               membership
+               |> Ash.Changeset.for_update(:update, %{role: :admin}, actor: bypass_actor())
+               |> Ash.update(domain: Accounts)
 
       assert updated.role == :admin
       assert updated.id == membership.id
     end
 
     test "can promote member to owner" do
-      membership = create_organization_membership(
-        user: create_user(),
-        organization: create_organization(),
-        role: :member
-      )
+      membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: create_organization(),
+          role: :member
+        )
 
       assert {:ok, promoted} =
-        membership
-        |> Ash.Changeset.for_update(:update, %{role: :owner}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               membership
+               |> Ash.Changeset.for_update(:update, %{role: :owner}, actor: bypass_actor())
+               |> Ash.update(domain: Accounts)
 
       assert promoted.role == :owner
     end
 
     test "can demote owner to member" do
-      membership = create_organization_membership(
-        user: create_user(),
-        organization: create_organization(),
-        role: :owner
-      )
+      membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: create_organization(),
+          role: :owner
+        )
 
       assert {:ok, demoted} =
-        membership
-        |> Ash.Changeset.for_update(:update, %{role: :member}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               membership
+               |> Ash.Changeset.for_update(:update, %{role: :member}, actor: bypass_actor())
+               |> Ash.update(domain: Accounts)
 
       assert demoted.role == :member
     end
 
     test "cannot change user_id after creation" do
-      membership = create_organization_membership(
-        user: create_user(),
-        organization: create_organization()
-      )
+      membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: create_organization()
+        )
 
       new_user = create_user()
 
       # Attempting to change user_id should fail or be ignored
-      result = membership
-      |> Ash.Changeset.for_update(:update, %{user_id: new_user.id}, actor: bypass_actor())
-      |> Ash.update(domain: Accounts)
+      result =
+        membership
+        |> Ash.Changeset.for_update(:update, %{user_id: new_user.id}, actor: bypass_actor())
+        |> Ash.update(domain: Accounts)
 
       case result do
         {:ok, updated} ->
@@ -357,17 +368,21 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
     end
 
     test "cannot change organization_id after creation" do
-      membership = create_organization_membership(
-        user: create_user(),
-        organization: create_organization()
-      )
+      membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: create_organization()
+        )
 
       new_org = create_organization()
 
       # Attempting to change organization_id should fail or be ignored
-      result = membership
-      |> Ash.Changeset.for_update(:update, %{organization_id: new_org.id}, actor: bypass_actor())
-      |> Ash.update(domain: Accounts)
+      result =
+        membership
+        |> Ash.Changeset.for_update(:update, %{organization_id: new_org.id},
+          actor: bypass_actor()
+        )
+        |> Ash.update(domain: Accounts)
 
       case result do
         {:ok, updated} ->
@@ -512,18 +527,21 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
 
       # Create membership from 30 days ago
       old_date = DateTime.add(DateTime.utc_now(), -30 * 24 * 3600, :second)
-      old_membership = create_organization_membership(
-        user: create_user(),
-        organization: org,
-        joined_at: old_date
-      )
+
+      old_membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: org,
+          joined_at: old_date
+        )
 
       # Create membership from today
-      new_membership = create_organization_membership(
-        user: create_user(),
-        organization: org,
-        joined_at: DateTime.utc_now()
-      )
+      new_membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: org,
+          joined_at: DateTime.utc_now()
+        )
 
       # Query memberships from last 7 days
       cutoff_date = DateTime.add(DateTime.utc_now(), -7 * 24 * 3600, :second)
@@ -548,9 +566,14 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       studio_b = create_organization(name: "Studio B")
       studio_c = create_organization(name: "Studio C")
 
-      mem_a = create_organization_membership(user: instructor, organization: studio_a, role: :member)
-      mem_b = create_organization_membership(user: instructor, organization: studio_b, role: :member)
-      mem_c = create_organization_membership(user: instructor, organization: studio_c, role: :admin)
+      mem_a =
+        create_organization_membership(user: instructor, organization: studio_a, role: :member)
+
+      mem_b =
+        create_organization_membership(user: instructor, organization: studio_b, role: :member)
+
+      mem_c =
+        create_organization_membership(user: instructor, organization: studio_c, role: :admin)
 
       memberships =
         OrganizationMembership
@@ -619,21 +642,23 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
 
   describe "membership lifecycle and timestamps" do
     test "tracks membership creation timestamp" do
-      membership = create_organization_membership(
-        user: create_user(),
-        organization: create_organization()
-      )
+      membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: create_organization()
+        )
 
       assert membership.inserted_at != nil
       assert %DateTime{} = membership.inserted_at
     end
 
     test "tracks membership update timestamp" do
-      membership = create_organization_membership(
-        user: create_user(),
-        organization: create_organization(),
-        role: :member
-      )
+      membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: create_organization(),
+          role: :member
+        )
 
       original_updated_at = membership.updated_at
 
@@ -650,32 +675,35 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
     test "joined_at reflects when user joined organization" do
       join_time = DateTime.utc_now()
 
-      membership = create_organization_membership(
-        user: create_user(),
-        organization: create_organization(),
-        joined_at: join_time
-      )
+      membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: create_organization(),
+          joined_at: join_time
+        )
 
       # joined_at should be approximately the specified time
       diff = DateTime.diff(membership.joined_at, join_time, :second)
-      assert abs(diff) < 2  # Within 2 seconds
+      # Within 2 seconds
+      assert abs(diff) < 2
     end
   end
 
   describe "membership deletion and cleanup" do
     test "can delete membership" do
-      membership = create_organization_membership(
-        user: create_user(),
-        organization: create_organization()
-      )
+      membership =
+        create_organization_membership(
+          user: create_user(),
+          organization: create_organization()
+        )
 
       assert :ok = Ash.destroy(membership, domain: Accounts, actor: bypass_actor())
 
       # Verify membership is gone
       assert {:error, %Ash.Error.Query.NotFound{}} =
-        OrganizationMembership
-        |> Ash.Query.filter(id == ^membership.id)
-        |> Ash.read_one(domain: Accounts, actor: bypass_actor())
+               OrganizationMembership
+               |> Ash.Query.filter(id == ^membership.id)
+               |> Ash.read_one(domain: Accounts, actor: bypass_actor())
     end
 
     test "deleting user cascades to memberships" do
@@ -728,14 +756,14 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
 
       # Verify user and organization still exist
       assert {:ok, _} =
-        User
-        |> Ash.Query.filter(id == ^user.id)
-        |> Ash.read_one(domain: Accounts, actor: bypass_actor())
+               User
+               |> Ash.Query.filter(id == ^user.id)
+               |> Ash.read_one(domain: Accounts, actor: bypass_actor())
 
       assert {:ok, _} =
-        Organization
-        |> Ash.Query.filter(id == ^org.id)
-        |> Ash.read_one(domain: Accounts, actor: bypass_actor())
+               Organization
+               |> Ash.Query.filter(id == ^org.id)
+               |> Ash.read_one(domain: Accounts, actor: bypass_actor())
     end
   end
 
@@ -794,9 +822,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
 
       # User1 should not access user2's membership in different org
       assert {:error, %Ash.Error.Forbidden{}} =
-        OrganizationMembership
-        |> Ash.Query.filter(id == ^membership2.id)
-        |> Ash.read_one(domain: Accounts, actor: user1)
+               OrganizationMembership
+               |> Ash.Query.filter(id == ^membership2.id)
+               |> Ash.read_one(domain: Accounts, actor: user1)
     end
 
     test "only owner can update member roles" do
@@ -821,9 +849,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
 
       # Owner can update
       assert {:ok, updated} =
-        member_membership
-        |> Ash.Changeset.for_update(:update, %{role: :admin}, actor: owner)
-        |> Ash.update(domain: Accounts)
+               member_membership
+               |> Ash.Changeset.for_update(:update, %{role: :admin}, actor: owner)
+               |> Ash.update(domain: Accounts)
 
       assert updated.role == :admin
     end
@@ -839,9 +867,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
 
       # Member cannot promote self
       assert {:error, %Ash.Error.Forbidden{}} =
-        member_membership
-        |> Ash.Changeset.for_update(:update, %{role: :owner}, actor: member)
-        |> Ash.update(domain: Accounts)
+               member_membership
+               |> Ash.Changeset.for_update(:update, %{role: :owner}, actor: member)
+               |> Ash.update(domain: Accounts)
     end
   end
 
@@ -862,9 +890,10 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       |> Ash.update!(domain: Accounts)
 
       # Try to demote the only owner - should either fail or be handled by business logic
-      result = membership
-      |> Ash.Changeset.for_update(:update, %{role: :member}, actor: bypass_actor())
-      |> Ash.update(domain: Accounts)
+      result =
+        membership
+        |> Ash.Changeset.for_update(:update, %{role: :member}, actor: bypass_actor())
+        |> Ash.update(domain: Accounts)
 
       case result do
         {:error, changeset} ->
@@ -879,7 +908,8 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
             |> Ash.read!(domain: Accounts)
 
           # Either the update maintained owner role or there's another owner
-          assert length(owners) >= 0  # Business logic may allow this
+          # Business logic may allow this
+          assert length(owners) >= 0
       end
     end
 
@@ -888,25 +918,27 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       org = create_organization()
 
       # Attempt concurrent membership creation
-      tasks = Enum.map(1..3, fn _ ->
-        Task.async(fn ->
-          OrganizationMembership
-          |> Ash.Changeset.for_create(:create, %{
-            user_id: user.id,
-            organization_id: org.id,
-            role: :member
-          })
-          |> Ash.create(domain: Accounts)
+      tasks =
+        Enum.map(1..3, fn _ ->
+          Task.async(fn ->
+            OrganizationMembership
+            |> Ash.Changeset.for_create(:create, %{
+              user_id: user.id,
+              organization_id: org.id,
+              role: :member
+            })
+            |> Ash.create(domain: Accounts)
+          end)
         end)
-      end)
 
       results = Task.await_many(tasks)
 
       # Exactly one should succeed
-      successful = Enum.filter(results, fn
-        {:ok, _} -> true
-        _ -> false
-      end)
+      successful =
+        Enum.filter(results, fn
+          {:ok, _} -> true
+          _ -> false
+        end)
 
       assert length(successful) == 1
     end

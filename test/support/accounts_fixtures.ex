@@ -45,12 +45,14 @@ defmodule PilatesOnPhx.AccountsFixtures do
   def create_organization(attrs \\ %{}) do
     unique_id = System.unique_integer([:positive])
 
-    org_attrs = %{
-      name: "Test Organization #{unique_id}",
-      timezone: "America/New_York",
-      settings: %{},
-      active: true
-    } |> Map.merge(Enum.into(attrs, %{}))
+    org_attrs =
+      %{
+        name: "Test Organization #{unique_id}",
+        timezone: "America/New_York",
+        settings: %{},
+        active: true
+      }
+      |> Map.merge(Enum.into(attrs, %{}))
 
     # Create organization - owner will be set via membership
     Organization
@@ -86,18 +88,21 @@ defmodule PilatesOnPhx.AccountsFixtures do
     # Handle organization - create if not provided
     organization = attrs[:organization] || create_organization()
 
-    user_attrs = %{
-      email: "user_#{unique_id}@example.com",
-      password: "SecurePassword123!",
-      name: "Test User #{unique_id}",
-      role: :client
-    } |> Map.merge(Enum.into(attrs, %{}))
-    |> Map.delete(:organization)
+    user_attrs =
+      %{
+        email: "user_#{unique_id}@example.com",
+        password: "SecurePassword123!",
+        name: "Test User #{unique_id}",
+        role: :client
+      }
+      |> Map.merge(Enum.into(attrs, %{}))
+      |> Map.delete(:organization)
 
     # Create user through registration action
-    user = User
-    |> Ash.Changeset.for_create(:register, user_attrs)
-    |> Ash.create!(domain: Accounts, actor: bypass_actor())
+    user =
+      User
+      |> Ash.Changeset.for_create(:register, user_attrs)
+      |> Ash.create!(domain: Accounts, actor: bypass_actor())
 
     # Create organization membership
     create_organization_membership(user: user, organization: organization)
@@ -131,24 +136,30 @@ defmodule PilatesOnPhx.AccountsFixtures do
 
     # Create base user without organization membership
     unique_id = System.unique_integer([:positive])
-    base_attrs = %{
-      email: "multi_org_user_#{unique_id}@example.com",
-      password: "SecurePassword123!",
-      name: "Multi Org User #{unique_id}",
-      role: :instructor  # Instructors commonly work at multiple studios
-    } |> Map.merge(user_attrs)
 
-    user = User
-    |> Ash.Changeset.for_create(:register, base_attrs)
-    |> Ash.create!(domain: Accounts, actor: bypass_actor())
+    base_attrs =
+      %{
+        email: "multi_org_user_#{unique_id}@example.com",
+        password: "SecurePassword123!",
+        name: "Multi Org User #{unique_id}",
+        # Instructors commonly work at multiple studios
+        role: :instructor
+      }
+      |> Map.merge(user_attrs)
+
+    user =
+      User
+      |> Ash.Changeset.for_create(:register, base_attrs)
+      |> Ash.create!(domain: Accounts, actor: bypass_actor())
 
     # Create organization memberships
-    organizations = if orgs = attrs[:organizations] do
-      orgs
-    else
-      count = Map.get(attrs, :organization_count, 3)
-      Enum.map(1..count, fn _ -> create_organization() end)
-    end
+    organizations =
+      if orgs = attrs[:organizations] do
+        orgs
+      else
+        count = Map.get(attrs, :organization_count, 3)
+        Enum.map(1..count, fn _ -> create_organization() end)
+      end
 
     Enum.each(organizations, fn org ->
       create_organization_membership(user: user, organization: org)
@@ -220,9 +231,10 @@ defmodule PilatesOnPhx.AccountsFixtures do
       expires_at: Map.get(attrs, :expires_at, DateTime.add(DateTime.utc_now(), 3600, :second))
     }
 
-    token = Token
-    |> Ash.Changeset.for_create(:create, token_attrs)
-    |> Ash.create!(domain: Accounts, actor: bypass_actor())
+    token =
+      Token
+      |> Ash.Changeset.for_create(:create, token_attrs)
+      |> Ash.create!(domain: Accounts, actor: bypass_actor())
 
     {user, token}
   end
@@ -250,7 +262,8 @@ defmodule PilatesOnPhx.AccountsFixtures do
     token_attrs = %{
       user_id: user.id,
       token_type: Keyword.get(attrs, :token_type, :bearer),
-      expires_at: Keyword.get(attrs, :expires_at, DateTime.add(DateTime.utc_now(), 3600, :second)),
+      expires_at:
+        Keyword.get(attrs, :expires_at, DateTime.add(DateTime.utc_now(), 3600, :second)),
       extra_data: Keyword.get(attrs, :extra_data, %{})
     }
 
@@ -311,38 +324,42 @@ defmodule PilatesOnPhx.AccountsFixtures do
     organization = create_organization()
 
     # Create owner
-    owner = create_user(
-      role: :owner,
-      organization: organization,
-      name: "Studio Owner"
-    )
+    owner =
+      create_user(
+        role: :owner,
+        organization: organization,
+        name: "Studio Owner"
+      )
 
     # Update membership to owner role
-    membership = OrganizationMembership
-    |> Ash.Query.filter(user_id == ^owner.id and organization_id == ^organization.id)
-    |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
+    membership =
+      OrganizationMembership
+      |> Ash.Query.filter(user_id == ^owner.id and organization_id == ^organization.id)
+      |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
     membership
     |> Ash.Changeset.for_update(:update, %{role: :owner}, actor: bypass_actor())
     |> Ash.update!(domain: Accounts)
 
     # Create instructors
-    instructors = Enum.map(1..instructor_count, fn i ->
-      create_user(
-        role: :instructor,
-        organization: organization,
-        name: "Instructor #{i}"
-      )
-    end)
+    instructors =
+      Enum.map(1..instructor_count, fn i ->
+        create_user(
+          role: :instructor,
+          organization: organization,
+          name: "Instructor #{i}"
+        )
+      end)
 
     # Create clients
-    clients = Enum.map(1..client_count, fn i ->
-      create_user(
-        role: :client,
-        organization: organization,
-        name: "Client #{i}"
-      )
-    end)
+    clients =
+      Enum.map(1..client_count, fn i ->
+        create_user(
+          role: :client,
+          organization: organization,
+          name: "Client #{i}"
+        )
+      end)
 
     %{
       organization: organization,

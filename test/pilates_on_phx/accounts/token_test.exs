@@ -19,14 +19,15 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       }
 
       assert {:ok, token} =
-        Token
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Token
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert token.user_id == user.id
       assert token.token_type == :bearer
       assert token.expires_at != nil
-      assert token.jti != nil  # JWT ID should be generated
+      # JWT ID should be generated
+      assert token.jti != nil
     end
 
     test "requires user_id" do
@@ -69,9 +70,9 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       }
 
       assert {:ok, token} =
-        Token
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Token
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert token.token_type == :bearer
     end
@@ -87,9 +88,9 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       }
 
       assert {:ok, token} =
-        Token
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Token
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       # Default expiration should be set (e.g., 1 hour from now)
       assert token.expires_at != nil
@@ -106,9 +107,9 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       }
 
       assert {:ok, token} =
-        Token
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Token
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert token.extra_data == %{} or is_map(token.extra_data)
     end
@@ -128,9 +129,9 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       }
 
       assert {:ok, token} =
-        Token
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Token
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert token.extra_data["device_id"] == "mobile-123"
       assert token.extra_data["ip_address"] == "192.168.1.1"
@@ -187,13 +188,14 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       attrs = %{
         user_id: user.id,
         token_type: :refresh,
-        expires_at: DateTime.add(DateTime.utc_now(), 30 * 24 * 3600, :second)  # 30 days
+        # 30 days
+        expires_at: DateTime.add(DateTime.utc_now(), 30 * 24 * 3600, :second)
       }
 
       assert {:ok, token} =
-        Token
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Token
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert token.token_type == :refresh
     end
@@ -204,13 +206,14 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       attrs = %{
         user_id: user.id,
         token_type: :password_reset,
-        expires_at: DateTime.add(DateTime.utc_now(), 3600, :second)  # 1 hour
+        # 1 hour
+        expires_at: DateTime.add(DateTime.utc_now(), 3600, :second)
       }
 
       assert {:ok, token} =
-        Token
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Token
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert token.token_type == :password_reset
     end
@@ -221,13 +224,14 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       attrs = %{
         user_id: user.id,
         token_type: :email_confirmation,
-        expires_at: DateTime.add(DateTime.utc_now(), 24 * 3600, :second)  # 24 hours
+        # 24 hours
+        expires_at: DateTime.add(DateTime.utc_now(), 24 * 3600, :second)
       }
 
       assert {:ok, token} =
-        Token
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Token
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert token.token_type == :email_confirmation
     end
@@ -237,7 +241,8 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
     test "token with future expiration is not expired" do
       user = create_user()
 
-      expires_at = DateTime.add(DateTime.utc_now(), 3600, :second)  # 1 hour from now
+      # 1 hour from now
+      expires_at = DateTime.add(DateTime.utc_now(), 3600, :second)
       token = create_token(user: user, expires_at: expires_at)
 
       # Token should not be expired
@@ -247,7 +252,8 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
     test "token with past expiration is expired" do
       user = create_user()
 
-      expires_at = DateTime.add(DateTime.utc_now(), -3600, :second)  # 1 hour ago
+      # 1 hour ago
+      expires_at = DateTime.add(DateTime.utc_now(), -3600, :second)
       token = create_token(user: user, expires_at: expires_at)
 
       # Token should be expired
@@ -317,8 +323,10 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
     test "refresh tokens expire much later than bearer tokens" do
       user = create_user()
 
-      bearer_expires = DateTime.add(DateTime.utc_now(), 3600, :second)  # 1 hour
-      refresh_expires = DateTime.add(DateTime.utc_now(), 30 * 24 * 3600, :second)  # 30 days
+      # 1 hour
+      bearer_expires = DateTime.add(DateTime.utc_now(), 3600, :second)
+      # 30 days
+      refresh_expires = DateTime.add(DateTime.utc_now(), 30 * 24 * 3600, :second)
 
       bearer_token = create_token(user: user, token_type: :bearer, expires_at: bearer_expires)
       refresh_token = create_token(user: user, token_type: :refresh, expires_at: refresh_expires)
@@ -327,7 +335,8 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       assert DateTime.compare(refresh_token.expires_at, bearer_token.expires_at) == :gt
 
       diff_seconds = DateTime.diff(refresh_token.expires_at, bearer_token.expires_at, :second)
-      assert diff_seconds > 24 * 3600  # At least 24 hours difference
+      # At least 24 hours difference
+      assert diff_seconds > 24 * 3600
     end
   end
 
@@ -339,9 +348,9 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       before_revoke = DateTime.utc_now()
 
       assert {:ok, revoked} =
-        token
-        |> Ash.Changeset.for_update(:revoke, %{})
-        |> Ash.update(domain: Accounts)
+               token
+               |> Ash.Changeset.for_update(:revoke, %{})
+               |> Ash.update(domain: Accounts)
 
       assert revoked.revoked_at != nil
       # The revoked_at should be set to approximately now (within a few seconds)
@@ -356,6 +365,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       # Create and revoke a token
       revoked_token = create_token(user: user)
+
       {:ok, _} =
         revoked_token
         |> Ash.Changeset.for_update(:revoke, %{})
@@ -377,12 +387,14 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       # Create and revoke tokens
       token1 = create_token(user: user)
+
       {:ok, _} =
         token1
         |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       token2 = create_token(user: user)
+
       {:ok, _} =
         token2
         |> Ash.Changeset.for_update(:revoke, %{})
@@ -565,6 +577,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       # Create revoked token
       revoked = create_token(user: user)
+
       {:ok, revoked} =
         revoked
         |> Ash.Changeset.for_update(:revoke, %{})
@@ -576,8 +589,8 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
         Token
         |> Ash.Query.filter(
           user_id == ^user.id and
-          expires_at > ^now and
-          is_nil(revoked_at)
+            expires_at > ^now and
+            is_nil(revoked_at)
         )
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
@@ -616,7 +629,8 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       user = create_user()
 
       # Create token
-      expires_at = DateTime.add(DateTime.utc_now(), 2, :second)  # 2 seconds
+      # 2 seconds
+      expires_at = DateTime.add(DateTime.utc_now(), 2, :second)
       token = create_token(user: user, expires_at: expires_at)
 
       # Token is initially valid
@@ -669,15 +683,16 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       user = create_user()
 
       # Store metadata (device info, IP, etc.) but NOT password or secrets
-      token = create_token(
-        user: user,
-        extra_data: %{
-          device: "iPhone 14",
-          os: "iOS 16",
-          app_version: "1.2.3",
-          login_method: "password"
-        }
-      )
+      token =
+        create_token(
+          user: user,
+          extra_data: %{
+            device: "iPhone 14",
+            os: "iOS 16",
+            app_version: "1.2.3",
+            login_method: "password"
+          }
+        )
 
       # Metadata should be stored
       assert token.extra_data["device"] == "iPhone 14"
@@ -712,11 +727,12 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
     test "handles concurrent token creation for same user" do
       user = create_user()
 
-      tasks = Enum.map(1..5, fn _ ->
-        Task.async(fn ->
-          create_token(user: user)
+      tasks =
+        Enum.map(1..5, fn _ ->
+          Task.async(fn ->
+            create_token(user: user)
+          end)
         end)
-      end)
 
       tokens = Task.await_many(tasks)
 
@@ -738,21 +754,22 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       now = DateTime.utc_now()
 
       # Revoke concurrently
-      tasks = Enum.map([token1, token2, token3], fn token ->
-        Task.async(fn ->
-          token
-          |> Ash.Changeset.for_update(:revoke, %{revoked_at: now})
-          |> Ash.update(domain: Accounts)
+      tasks =
+        Enum.map([token1, token2, token3], fn token ->
+          Task.async(fn ->
+            token
+            |> Ash.Changeset.for_update(:revoke, %{revoked_at: now})
+            |> Ash.update(domain: Accounts)
+          end)
         end)
-      end)
 
       results = Task.await_many(tasks)
 
       # All should succeed
       assert Enum.all?(results, fn
-        {:ok, _} -> true
-        _ -> false
-      end)
+               {:ok, _} -> true
+               _ -> false
+             end)
     end
   end
 
@@ -765,23 +782,26 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       # Token should be gone
       assert {:error, %Ash.Error.Query.NotFound{}} =
-        Token
-        |> Ash.Query.filter(jti == ^token.jti)
-        |> Ash.read_one(domain: Accounts, actor: bypass_actor())
+               Token
+               |> Ash.Query.filter(jti == ^token.jti)
+               |> Ash.read_one(domain: Accounts, actor: bypass_actor())
     end
 
     test "can clean up expired tokens" do
       user = create_user()
 
       # Create old expired tokens
-      expired1 = create_expired_token(user: user, expired_minutes_ago: 60 * 24)  # 1 day ago
-      expired2 = create_expired_token(user: user, expired_minutes_ago: 60 * 24 * 7)  # 7 days ago
+      # 1 day ago
+      expired1 = create_expired_token(user: user, expired_minutes_ago: 60 * 24)
+      # 7 days ago
+      expired2 = create_expired_token(user: user, expired_minutes_ago: 60 * 24 * 7)
 
       # Create active token
       active = create_token(user: user)
 
       # Query expired tokens for cleanup
-      cutoff = DateTime.add(DateTime.utc_now(), -24 * 3600, :second)  # 1 day ago
+      # 1 day ago
+      cutoff = DateTime.add(DateTime.utc_now(), -24 * 3600, :second)
 
       old_expired =
         Token
@@ -795,9 +815,9 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       # Active token should remain
       assert {:ok, _} =
-        Token
-        |> Ash.Query.filter(id == ^active.id)
-        |> Ash.read_one(domain: Accounts, actor: bypass_actor())
+               Token
+               |> Ash.Query.filter(id == ^active.id)
+               |> Ash.read_one(domain: Accounts, actor: bypass_actor())
     end
 
     test "can clean up revoked tokens after grace period" do
@@ -846,9 +866,9 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       token2 = create_token(user: user2)
 
       assert {:error, %Ash.Error.Forbidden{}} =
-        Token
-        |> Ash.Query.filter(jti == ^token2.jti)
-        |> Ash.read_one(domain: Accounts, actor: user1)
+               Token
+               |> Ash.Query.filter(jti == ^token2.jti)
+               |> Ash.read_one(domain: Accounts, actor: user1)
     end
 
     test "user can revoke their own tokens" do
@@ -856,9 +876,9 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       token = create_token(user: user)
 
       assert {:ok, revoked} =
-        token
-        |> Ash.Changeset.for_update(:revoke, %{}, actor: user)
-        |> Ash.update(domain: Accounts)
+               token
+               |> Ash.Changeset.for_update(:revoke, %{}, actor: user)
+               |> Ash.update(domain: Accounts)
 
       assert revoked.revoked_at != nil
     end
@@ -870,9 +890,9 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       token2 = create_token(user: user2)
 
       assert {:error, %Ash.Error.Forbidden{}} =
-        token2
-        |> Ash.Changeset.for_update(:revoke, %{}, actor: user1)
-        |> Ash.update(domain: Accounts)
+               token2
+               |> Ash.Changeset.for_update(:revoke, %{}, actor: user1)
+               |> Ash.update(domain: Accounts)
     end
   end
 end

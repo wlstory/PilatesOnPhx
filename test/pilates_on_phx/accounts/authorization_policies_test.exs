@@ -28,17 +28,17 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # User from org1 can read users in org1
       assert {:ok, loaded} =
-        User
-        |> Ash.Query.filter(id == ^user_org1.id)
-        |> Ash.read_one(domain: Accounts, actor: user_org1)
+               User
+               |> Ash.Query.filter(id == ^user_org1.id)
+               |> Ash.read_one(domain: Accounts, actor: user_org1)
 
       assert loaded.id == user_org1.id
 
       # User from org1 cannot read users in org2 (filtered out, returns nil)
       assert {:ok, nil} =
-        User
-        |> Ash.Query.filter(id == ^user_org2.id)
-        |> Ash.read_one(domain: Accounts, actor: user_org1)
+               User
+               |> Ash.Query.filter(id == ^user_org2.id)
+               |> Ash.read_one(domain: Accounts, actor: user_org1)
     end
 
     test "users can only list users within their organization" do
@@ -78,31 +78,31 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # User1 can access their organization
       assert {:ok, loaded_org1} =
-        Organization
-        |> Ash.Query.filter(id == ^org1.id)
-        |> Ash.read_one(domain: Accounts, actor: user1)
+               Organization
+               |> Ash.Query.filter(id == ^org1.id)
+               |> Ash.read_one(domain: Accounts, actor: user1)
 
       assert loaded_org1.id == org1.id
 
       # User1 cannot access other organization (filtered out)
       assert {:ok, nil} =
-        Organization
-        |> Ash.Query.filter(id == ^org2.id)
-        |> Ash.read_one(domain: Accounts, actor: user1)
+               Organization
+               |> Ash.Query.filter(id == ^org2.id)
+               |> Ash.read_one(domain: Accounts, actor: user1)
 
       # User2 can access their organization
       assert {:ok, loaded_org2} =
-        Organization
-        |> Ash.Query.filter(id == ^org2.id)
-        |> Ash.read_one(domain: Accounts, actor: user2)
+               Organization
+               |> Ash.Query.filter(id == ^org2.id)
+               |> Ash.read_one(domain: Accounts, actor: user2)
 
       assert loaded_org2.id == org2.id
 
       # User2 cannot access other organization (filtered out)
       assert {:ok, nil} =
-        Organization
-        |> Ash.Query.filter(id == ^org1.id)
-        |> Ash.read_one(domain: Accounts, actor: user2)
+               Organization
+               |> Ash.Query.filter(id == ^org1.id)
+               |> Ash.read_one(domain: Accounts, actor: user2)
     end
 
     test "memberships are scoped to actor's organization" do
@@ -137,17 +137,17 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # User1 can access their own token
       assert {:ok, loaded_token} =
-        Token
-        |> Ash.Query.filter(jti == ^token1.jti)
-        |> Ash.read_one(domain: Accounts, actor: user1)
+               Token
+               |> Ash.Query.filter(jti == ^token1.jti)
+               |> Ash.read_one(domain: Accounts, actor: user1)
 
       assert loaded_token.jti == token1.jti
 
       # User1 cannot access user2's token (filtered out)
       assert {:ok, nil} =
-        Token
-        |> Ash.Query.filter(jti == ^token2.jti)
-        |> Ash.read_one(domain: Accounts, actor: user1)
+               Token
+               |> Ash.Query.filter(jti == ^token2.jti)
+               |> Ash.read_one(domain: Accounts, actor: user1)
     end
   end
 
@@ -170,9 +170,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # Owner can update organization
       assert {:ok, updated} =
-        org
-        |> Ash.Changeset.for_update(:update, %{name: "Updated by Owner"}, actor: owner)
-        |> Accounts.update()
+               org
+               |> Ash.Changeset.for_update(:update, %{name: "Updated by Owner"}, actor: owner)
+               |> Accounts.update()
 
       assert updated.name == "Updated by Owner"
     end
@@ -200,9 +200,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
         |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
       assert {:ok, updated_membership} =
-        member_membership
-        |> Ash.Changeset.for_update(:update, %{role: :admin}, actor: owner)
-        |> Accounts.update()
+               member_membership
+               |> Ash.Changeset.for_update(:update, %{role: :admin}, actor: owner)
+               |> Accounts.update()
 
       assert updated_membership.role == :admin
     end
@@ -224,18 +224,19 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # Owner can deactivate
       assert {:ok, deactivated} =
-        org
-        |> Ash.Changeset.for_update(:deactivate, %{}, actor: owner)
-        |> Accounts.update()
+               org
+               |> Ash.Changeset.for_update(:deactivate, %{}, actor: owner)
+               |> Accounts.update()
 
       assert deactivated.active == false
     end
 
     test "owner can view all organization members" do
-      scenario = create_organization_scenario(
-        instructor_count: 3,
-        client_count: 10
-      )
+      scenario =
+        create_organization_scenario(
+          instructor_count: 3,
+          client_count: 10
+        )
 
       owner = scenario.owner
       org = scenario.organization
@@ -268,17 +269,19 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # Instructor can read organization
       assert {:ok, loaded_org} =
-        Organization
-        |> Ash.Query.filter(id == ^org.id)
-        |> Ash.read_one(domain: Accounts, actor: instructor)
+               Organization
+               |> Ash.Query.filter(id == ^org.id)
+               |> Ash.read_one(domain: Accounts, actor: instructor)
 
       assert loaded_org.id == org.id
 
       # Instructor cannot update organization settings
       assert {:error, %Ash.Error.Forbidden{}} =
-        org
-        |> Ash.Changeset.for_update(:update, %{name: "Unauthorized Update"}, actor: instructor)
-        |> Accounts.update()
+               org
+               |> Ash.Changeset.for_update(:update, %{name: "Unauthorized Update"},
+                 actor: instructor
+               )
+               |> Accounts.update()
     end
 
     test "instructor can view other members but not change roles" do
@@ -301,9 +304,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
         |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
       assert {:error, %Ash.Error.Forbidden{}} =
-        client_membership
-        |> Ash.Changeset.for_update(:update, %{role: :admin}, actor: instructor)
-        |> Accounts.update()
+               client_membership
+               |> Ash.Changeset.for_update(:update, %{role: :admin}, actor: instructor)
+               |> Accounts.update()
     end
 
     test "instructor cannot deactivate organization" do
@@ -311,9 +314,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       instructor = create_user(organization: org, role: :instructor)
 
       assert {:error, %Ash.Error.Forbidden{}} =
-        org
-        |> Ash.Changeset.for_update(:deactivate, %{}, actor: instructor)
-        |> Accounts.update()
+               org
+               |> Ash.Changeset.for_update(:deactivate, %{}, actor: instructor)
+               |> Accounts.update()
     end
   end
 
@@ -324,17 +327,17 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # Client can read organization
       assert {:ok, loaded_org} =
-        Organization
-        |> Ash.Query.filter(id == ^org.id)
-        |> Ash.read_one(domain: Accounts, actor: client)
+               Organization
+               |> Ash.Query.filter(id == ^org.id)
+               |> Ash.read_one(domain: Accounts, actor: client)
 
       assert loaded_org.id == org.id
 
       # Client cannot update organization
       assert {:error, %Ash.Error.Forbidden{}} =
-        org
-        |> Ash.Changeset.for_update(:update, %{name: "Unauthorized"}, actor: client)
-        |> Accounts.update()
+               org
+               |> Ash.Changeset.for_update(:update, %{name: "Unauthorized"}, actor: client)
+               |> Accounts.update()
     end
 
     test "client can view other members in organization" do
@@ -362,9 +365,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
         |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
       assert {:error, %Ash.Error.Forbidden{}} =
-        other_membership
-        |> Ash.Changeset.for_update(:update, %{role: :admin}, actor: client)
-        |> Accounts.update()
+               other_membership
+               |> Ash.Changeset.for_update(:update, %{role: :admin}, actor: client)
+               |> Accounts.update()
     end
 
     test "client cannot promote themselves" do
@@ -377,9 +380,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
         |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
       assert {:error, %Ash.Error.Forbidden{}} =
-        client_membership
-        |> Ash.Changeset.for_update(:update, %{role: :owner}, actor: client)
-        |> Accounts.update()
+               client_membership
+               |> Ash.Changeset.for_update(:update, %{role: :owner}, actor: client)
+               |> Accounts.update()
     end
   end
 
@@ -388,9 +391,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       user = create_user(name: "Original Name")
 
       assert {:ok, updated} =
-        user
-        |> Ash.Changeset.for_update(:update, %{name: "Updated Name"}, actor: user)
-        |> Accounts.update()
+               user
+               |> Ash.Changeset.for_update(:update, %{name: "Updated Name"}, actor: user)
+               |> Accounts.update()
 
       assert updated.name == "Updated Name"
     end
@@ -402,13 +405,15 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       new_password = "NewPassword456!"
 
       assert {:ok, _updated} =
-        user
-        |> Ash.Changeset.for_update(:change_password, %{
-          current_password: old_password,
-          password: new_password,
-          password_confirmation: new_password
-        }, actor: user)
-        |> Accounts.update()
+               user
+               |> Ash.Changeset.for_update(
+                 :change_password,
+                 %{
+                   current_password: old_password,
+                   password: new_password,
+                   password_confirmation: new_password
+                 }, actor: user)
+               |> Accounts.update()
     end
 
     test "user cannot update other users' profiles" do
@@ -416,9 +421,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       user2 = create_user()
 
       assert {:error, %Ash.Error.Forbidden{}} =
-        user2
-        |> Ash.Changeset.for_update(:update, %{name: "Unauthorized"}, actor: user1)
-        |> Accounts.update()
+               user2
+               |> Ash.Changeset.for_update(:update, %{name: "Unauthorized"}, actor: user1)
+               |> Accounts.update()
     end
 
     test "user can manage their own tokens" do
@@ -427,9 +432,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # User can revoke their own token
       assert {:ok, revoked} =
-        token
-        |> Ash.Changeset.for_update(:revoke, %{}, actor: user)
-        |> Accounts.update()
+               token
+               |> Ash.Changeset.for_update(:revoke, %{}, actor: user)
+               |> Accounts.update()
 
       assert revoked.revoked_at != nil
     end
@@ -441,9 +446,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       token2 = create_token(user: user2)
 
       assert {:error, %Ash.Error.Forbidden{}} =
-        token2
-        |> Ash.Changeset.for_update(:revoke, %{}, actor: user1)
-        |> Accounts.update()
+               token2
+               |> Ash.Changeset.for_update(:revoke, %{}, actor: user1)
+               |> Accounts.update()
     end
   end
 
@@ -457,15 +462,15 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # Instructor A cannot access Studio B
       assert {:error, %Ash.Error.Forbidden{}} =
-        Organization
-        |> Ash.Query.filter(id == ^studio_b.id)
-        |> Ash.read_one(domain: Accounts, actor: instructor_a)
+               Organization
+               |> Ash.Query.filter(id == ^studio_b.id)
+               |> Ash.read_one(domain: Accounts, actor: instructor_a)
 
       # Instructor A cannot access users from Studio B
       assert {:error, %Ash.Error.Forbidden{}} =
-        User
-        |> Ash.Query.filter(id == ^instructor_b.id)
-        |> Ash.read_one(domain: Accounts, actor: instructor_a)
+               User
+               |> Ash.Query.filter(id == ^instructor_b.id)
+               |> Ash.read_one(domain: Accounts, actor: instructor_a)
     end
 
     test "owner of studio A cannot manage studio B" do
@@ -487,15 +492,15 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # Owner of A cannot update Studio B
       assert {:error, %Ash.Error.Forbidden{}} =
-        studio_b
-        |> Ash.Changeset.for_update(:update, %{name: "Unauthorized"}, actor: owner_a)
-        |> Accounts.update()
+               studio_b
+               |> Ash.Changeset.for_update(:update, %{name: "Unauthorized"}, actor: owner_a)
+               |> Accounts.update()
 
       # Owner of A cannot deactivate Studio B
       assert {:error, %Ash.Error.Forbidden{}} =
-        studio_b
-        |> Ash.Changeset.for_update(:deactivate, %{}, actor: owner_a)
-        |> Accounts.update()
+               studio_b
+               |> Ash.Changeset.for_update(:deactivate, %{}, actor: owner_a)
+               |> Accounts.update()
     end
 
     test "client cannot see users from other organizations" do
@@ -530,19 +535,19 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # User should be able to access all their organizations
       assert {:ok, loaded_org1} =
-        Organization
-        |> Ash.Query.filter(id == ^org1.id)
-        |> Ash.read_one(domain: Accounts, actor: multi_org_user)
+               Organization
+               |> Ash.Query.filter(id == ^org1.id)
+               |> Ash.read_one(domain: Accounts, actor: multi_org_user)
 
       assert {:ok, loaded_org2} =
-        Organization
-        |> Ash.Query.filter(id == ^org2.id)
-        |> Ash.read_one(domain: Accounts, actor: multi_org_user)
+               Organization
+               |> Ash.Query.filter(id == ^org2.id)
+               |> Ash.read_one(domain: Accounts, actor: multi_org_user)
 
       assert {:ok, loaded_org3} =
-        Organization
-        |> Ash.Query.filter(id == ^org3.id)
-        |> Ash.read_one(domain: Accounts, actor: multi_org_user)
+               Organization
+               |> Ash.Query.filter(id == ^org3.id)
+               |> Ash.read_one(domain: Accounts, actor: multi_org_user)
 
       assert loaded_org1.id == org1.id
       assert loaded_org2.id == org2.id
@@ -563,15 +568,17 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # Can update org1 (as owner)
       assert {:ok, _updated} =
-        org1
-        |> Ash.Changeset.for_update(:update, %{name: "Updated by Owner"}, actor: multi_user)
-        |> Accounts.update()
+               org1
+               |> Ash.Changeset.for_update(:update, %{name: "Updated by Owner"},
+                 actor: multi_user
+               )
+               |> Accounts.update()
 
       # Cannot update org2 (as member)
       assert {:error, %Ash.Error.Forbidden{}} =
-        org2
-        |> Ash.Changeset.for_update(:update, %{name: "Unauthorized"}, actor: multi_user)
-        |> Accounts.update()
+               org2
+               |> Ash.Changeset.for_update(:update, %{name: "Unauthorized"}, actor: multi_user)
+               |> Accounts.update()
     end
 
     test "removing membership removes organization access" do
@@ -585,18 +592,18 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # User has access
       assert {:ok, _} =
-        Organization
-        |> Ash.Query.filter(id == ^org.id)
-        |> Ash.read_one(domain: Accounts, actor: user)
+               Organization
+               |> Ash.Query.filter(id == ^org.id)
+               |> Ash.read_one(domain: Accounts, actor: user)
 
       # Remove membership
       Ash.destroy(membership, domain: Accounts)
 
       # User no longer has access
       assert {:error, %Ash.Error.Forbidden{}} =
-        Organization
-        |> Ash.Query.filter(id == ^org.id)
-        |> Ash.read_one(domain: Accounts, actor: user)
+               Organization
+               |> Ash.Query.filter(id == ^org.id)
+               |> Ash.read_one(domain: Accounts, actor: user)
     end
   end
 
@@ -642,7 +649,8 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       # (Actual behavior depends on resource policies)
       case result do
         {:error, _} -> assert true
-        {:ok, _} -> assert true  # Token creation might not require actor
+        # Token creation might not require actor
+        {:ok, _} -> assert true
       end
     end
   end
@@ -660,9 +668,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # User can still read the organization (to see it's inactive)
       assert {:ok, loaded} =
-        Organization
-        |> Ash.Query.filter(id == ^deactivated_org.id)
-        |> Ash.read_one(domain: Accounts, actor: user)
+               Organization
+               |> Ash.Query.filter(id == ^deactivated_org.id)
+               |> Ash.read_one(domain: Accounts, actor: user)
 
       assert loaded.active == false
     end
@@ -684,9 +692,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # Owner can reactivate
       assert {:ok, reactivated} =
-        org
-        |> Ash.Changeset.for_update(:activate, %{}, actor: owner)
-        |> Accounts.update()
+               org
+               |> Ash.Changeset.for_update(:activate, %{}, actor: owner)
+               |> Accounts.update()
 
       assert reactivated.active == true
     end
@@ -699,9 +707,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # User has access initially
       assert {:ok, _} =
-        Organization
-        |> Ash.Query.filter(id == ^org.id)
-        |> Ash.read_one(domain: Accounts, actor: user)
+               Organization
+               |> Ash.Query.filter(id == ^org.id)
+               |> Ash.read_one(domain: Accounts, actor: user)
 
       # Delete all memberships
       OrganizationMembership
@@ -711,9 +719,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # User no longer has access
       assert {:error, %Ash.Error.Forbidden{}} =
-        Organization
-        |> Ash.Query.filter(id == ^org.id)
-        |> Ash.read_one(domain: Accounts, actor: user)
+               Organization
+               |> Ash.Query.filter(id == ^org.id)
+               |> Ash.read_one(domain: Accounts, actor: user)
     end
 
     test "deleted user's tokens are inaccessible" do
@@ -737,21 +745,22 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       user = create_user(organization: org)
 
       # Simulate concurrent access attempts
-      tasks = Enum.map(1..5, fn _ ->
-        Task.async(fn ->
-          Organization
-          |> Ash.Query.filter(id == ^org.id)
-          |> Ash.read_one(domain: Accounts, actor: user)
+      tasks =
+        Enum.map(1..5, fn _ ->
+          Task.async(fn ->
+            Organization
+            |> Ash.Query.filter(id == ^org.id)
+            |> Ash.read_one(domain: Accounts, actor: user)
+          end)
         end)
-      end)
 
       results = Task.await_many(tasks)
 
       # All should succeed consistently
       assert Enum.all?(results, fn
-        {:ok, loaded} -> loaded.id == org.id
-        _ -> false
-      end)
+               {:ok, loaded} -> loaded.id == org.id
+               _ -> false
+             end)
     end
 
     test "user with no memberships cannot access any organization" do
@@ -769,9 +778,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       # User cannot access organization
       assert {:error, %Ash.Error.Forbidden{}} =
-        Organization
-        |> Ash.Query.filter(id == ^org.id)
-        |> Ash.read_one(domain: Accounts, actor: user)
+               Organization
+               |> Ash.Query.filter(id == ^org.id)
+               |> Ash.read_one(domain: Accounts, actor: user)
     end
   end
 end

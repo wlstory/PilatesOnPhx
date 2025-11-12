@@ -179,8 +179,9 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         |> Ash.create(domain: Accounts)
 
       assert Enum.any?(error.errors, fn err ->
-        err.field == :email and (err.message =~ "unique" or err.message =~ "already been taken")
-      end)
+               err.field == :email and
+                 (err.message =~ "unique" or err.message =~ "already been taken")
+             end)
     end
   end
 
@@ -223,22 +224,22 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       user = create_user(email: "test@example.com", password: "CorrectPassword123!")
 
       assert {:error, error} =
-        User
-        |> Ash.Query.for_read(:sign_in_with_password, %{
-          email: user.email,
-          password: "WrongPassword456!"
-        })
-        |> Ash.read_one(domain: Accounts)
+               User
+               |> Ash.Query.for_read(:sign_in_with_password, %{
+                 email: user.email,
+                 password: "WrongPassword456!"
+               })
+               |> Ash.read_one(domain: Accounts)
     end
 
     test "login fails with non-existent email" do
       assert {:error, error} =
-        User
-        |> Ash.Query.for_read(:sign_in_with_password, %{
-          email: "nonexistent@example.com",
-          password: "SomePassword123!"
-        })
-        |> Ash.read_one(domain: Accounts)
+               User
+               |> Ash.Query.for_read(:sign_in_with_password, %{
+                 email: "nonexistent@example.com",
+                 password: "SomePassword123!"
+               })
+               |> Ash.read_one(domain: Accounts)
     end
 
     test "login with multi-organization context" do
@@ -247,9 +248,10 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       password = "SecurePassword123!"
 
       # Update user with known password
-      user_with_password = User
-      |> Ash.Query.filter(id == ^user.id)
-      |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
+      user_with_password =
+        User
+        |> Ash.Query.filter(id == ^user.id)
+        |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
       # Login
       {:ok, authenticated} =
@@ -277,24 +279,25 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       user = create_user(password: password)
 
       # Simulate multiple concurrent login attempts
-      tasks = Enum.map(1..3, fn _ ->
-        Task.async(fn ->
-          User
-          |> Ash.Query.for_read(:sign_in_with_password, %{
-            email: user.email,
-            password: password
-          })
-          |> Ash.read_one(domain: Accounts)
+      tasks =
+        Enum.map(1..3, fn _ ->
+          Task.async(fn ->
+            User
+            |> Ash.Query.for_read(:sign_in_with_password, %{
+              email: user.email,
+              password: password
+            })
+            |> Ash.read_one(domain: Accounts)
+          end)
         end)
-      end)
 
       results = Task.await_many(tasks)
 
       # All should succeed
       assert Enum.all?(results, fn
-        {:ok, authenticated} -> authenticated.id == user.id
-        _ -> false
-      end)
+               {:ok, authenticated} -> authenticated.id == user.id
+               _ -> false
+             end)
     end
   end
 
@@ -364,9 +367,9 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         Token
         |> Ash.Query.filter(
           user_id == ^user.id and
-          token_type == :refresh and
-          expires_at > ^now and
-          is_nil(revoked_at)
+            token_type == :refresh and
+            expires_at > ^now and
+            is_nil(revoked_at)
         )
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
@@ -401,8 +404,8 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         Token
         |> Ash.Query.filter(
           user_id == ^user.id and
-          token_type == :refresh and
-          is_nil(revoked_at)
+            token_type == :refresh and
+            is_nil(revoked_at)
         )
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
@@ -454,15 +457,17 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       user = create_user()
 
       # Create tokens for different devices
-      device1_token = create_token(
-        user: user,
-        extra_data: %{device_id: "device-1"}
-      )
+      device1_token =
+        create_token(
+          user: user,
+          extra_data: %{device_id: "device-1"}
+        )
 
-      device2_token = create_token(
-        user: user,
-        extra_data: %{device_id: "device-2"}
-      )
+      device2_token =
+        create_token(
+          user: user,
+          extra_data: %{device_id: "device-2"}
+        )
 
       # Revoke only device1 token
       {:ok, revoked} =
@@ -491,7 +496,8 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       reset_token_attrs = %{
         user_id: user.id,
         token_type: "password_reset",
-        expires_at: DateTime.add(DateTime.utc_now(), 3600, :second)  # 1 hour
+        # 1 hour
+        expires_at: DateTime.add(DateTime.utc_now(), 3600, :second)
       }
 
       {:ok, reset_token} =
@@ -509,11 +515,13 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
 
       {:ok, updated_user} =
         user
-        |> Ash.Changeset.for_update(:change_password, %{
-          current_password: "OldPassword123!",
-          password: new_password,
-          password_confirmation: new_password
-        }, actor: user)
+        |> Ash.Changeset.for_update(
+          :change_password,
+          %{
+            current_password: "OldPassword123!",
+            password: new_password,
+            password_confirmation: new_password
+          }, actor: user)
         |> Ash.update(domain: Accounts)
 
       # Step 4: Revoke reset token after use
@@ -548,12 +556,12 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
 
       # Verify old password doesn't work
       assert {:error, %Ash.Error.Query.NotFound{}} =
-        User
-        |> Ash.Query.for_read(:sign_in_with_password, %{
-          email: "reset@example.com",
-          password: "OldPassword123!"
-        })
-        |> Ash.read_one(domain: Accounts)
+               User
+               |> Ash.Query.for_read(:sign_in_with_password, %{
+                 email: "reset@example.com",
+                 password: "OldPassword123!"
+               })
+               |> Ash.read_one(domain: Accounts)
     end
 
     test "password reset token expires after time limit" do
@@ -599,11 +607,13 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       # Use token to reset password
       {:ok, _updated} =
         user
-        |> Ash.Changeset.for_update(:change_password, %{
-          current_password: "OldPassword123!",
-          password: "NewPassword456!",
-          password_confirmation: "NewPassword456!"
-        }, actor: user)
+        |> Ash.Changeset.for_update(
+          :change_password,
+          %{
+            current_password: "OldPassword123!",
+            password: "NewPassword456!",
+            password_confirmation: "NewPassword456!"
+          }, actor: user)
         |> Ash.update(domain: Accounts)
 
       # Revoke token after use
@@ -619,8 +629,8 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         Token
         |> Ash.Query.filter(
           id == ^reset_token.id and
-          token_type == :password_reset and
-          is_nil(revoked_at)
+            token_type == :password_reset and
+            is_nil(revoked_at)
         )
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
@@ -646,7 +656,8 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       confirmation_token_attrs = %{
         user_id: user.id,
         token_type: "email_confirmation",
-        expires_at: DateTime.add(DateTime.utc_now(), 24 * 3600, :second)  # 24 hours
+        # 24 hours
+        expires_at: DateTime.add(DateTime.utc_now(), 24 * 3600, :second)
       }
 
       {:ok, confirmation_token} =
@@ -745,10 +756,12 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       org3 = create_organization(name: "Guest Studio")
 
       password = "SecurePassword123!"
-      user = create_multi_org_user(
-        user_attrs: %{password: password, email: "multi@example.com"},
-        organizations: [org1, org2, org3]
-      )
+
+      user =
+        create_multi_org_user(
+          user_attrs: %{password: password, email: "multi@example.com"},
+          organizations: [org1, org2, org3]
+        )
 
       # Set different roles in each organization
       memberships =
@@ -841,24 +854,24 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
 
       # Verify access to org1
       assert {:ok, _} =
-        Organization
-        |> Ash.Query.filter(id == ^org1.id)
-        |> Accounts.read_one(actor: user)
+               Organization
+               |> Ash.Query.filter(id == ^org1.id)
+               |> Accounts.read_one(actor: user)
 
       # Remove from org1
       Ash.destroy(mem1, domain: Accounts)
 
       # Should no longer have access to org1
       assert {:error, %Ash.Error.Forbidden{}} =
-        Organization
-        |> Ash.Query.filter(id == ^org1.id)
-        |> Accounts.read_one(actor: user)
+               Organization
+               |> Ash.Query.filter(id == ^org1.id)
+               |> Accounts.read_one(actor: user)
 
       # Should still have access to org2
       assert {:ok, _} =
-        Organization
-        |> Ash.Query.filter(id == ^org2.id)
-        |> Accounts.read_one(actor: user)
+               Organization
+               |> Ash.Query.filter(id == ^org2.id)
+               |> Accounts.read_one(actor: user)
     end
   end
 
@@ -891,24 +904,25 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       user = create_user(password: password)
 
       # Simulate multiple devices logging in simultaneously
-      tasks = Enum.map(1..5, fn _ ->
-        Task.async(fn ->
-          User
-          |> Ash.Query.for_read(:sign_in_with_password, %{
-            email: user.email,
-            password: password
-          })
-          |> Ash.read_one(domain: Accounts)
+      tasks =
+        Enum.map(1..5, fn _ ->
+          Task.async(fn ->
+            User
+            |> Ash.Query.for_read(:sign_in_with_password, %{
+              email: user.email,
+              password: password
+            })
+            |> Ash.read_one(domain: Accounts)
+          end)
         end)
-      end)
 
       results = Task.await_many(tasks)
 
       # All should succeed
       assert Enum.all?(results, fn
-        {:ok, authenticated} -> authenticated.id == user.id
-        _ -> false
-      end)
+               {:ok, authenticated} -> authenticated.id == user.id
+               _ -> false
+             end)
     end
 
     test "failed login attempts do not leak user existence" do
@@ -916,20 +930,22 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       create_user(email: "exists@example.com", password: "Password123!")
 
       # Failed login for existing user
-      result1 = User
-      |> Ash.Query.for_read(:sign_in_with_password, %{
-        email: "exists@example.com",
-        password: "WrongPassword!"
-      })
-      |> Ash.read_one(domain: Accounts)
+      result1 =
+        User
+        |> Ash.Query.for_read(:sign_in_with_password, %{
+          email: "exists@example.com",
+          password: "WrongPassword!"
+        })
+        |> Ash.read_one(domain: Accounts)
 
       # Failed login for non-existent user
-      result2 = User
-      |> Ash.Query.for_read(:sign_in_with_password, %{
-        email: "nonexistent@example.com",
-        password: "SomePassword!"
-      })
-      |> Ash.read_one(domain: Accounts)
+      result2 =
+        User
+        |> Ash.Query.for_read(:sign_in_with_password, %{
+          email: "nonexistent@example.com",
+          password: "SomePassword!"
+        })
+        |> Ash.read_one(domain: Accounts)
 
       # Both should return same error type (don't leak existence)
       assert match?({:error, %Ash.Error.Query.NotFound{}}, result1)

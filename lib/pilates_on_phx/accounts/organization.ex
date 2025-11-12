@@ -40,11 +40,10 @@ defmodule PilatesOnPhx.Accounts.Organization do
     attribute :name, :string do
       allow_nil? false
       public? true
-      constraints [
-        min_length: 1,
-        max_length: 255,
-        trim?: true
-      ]
+
+      constraints min_length: 1,
+                  max_length: 255,
+                  trim?: true
     end
 
     attribute :timezone, :string do
@@ -91,27 +90,61 @@ defmodule PilatesOnPhx.Accounts.Organization do
           # Validate against a list of common IANA timezones
           # This is a reasonable subset for production use
           valid_timezones = [
-            "UTC", "GMT",
+            "UTC",
+            "GMT",
             # Americas
-            "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
-            "America/Phoenix", "America/Anchorage", "America/Honolulu",
-            "America/Toronto", "America/Vancouver", "America/Mexico_City",
-            "America/Sao_Paulo", "America/Buenos_Aires",
+            "America/New_York",
+            "America/Chicago",
+            "America/Denver",
+            "America/Los_Angeles",
+            "America/Phoenix",
+            "America/Anchorage",
+            "America/Honolulu",
+            "America/Toronto",
+            "America/Vancouver",
+            "America/Mexico_City",
+            "America/Sao_Paulo",
+            "America/Buenos_Aires",
             # Europe
-            "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Rome",
-            "Europe/Madrid", "Europe/Amsterdam", "Europe/Brussels", "Europe/Vienna",
-            "Europe/Stockholm", "Europe/Copenhagen", "Europe/Dublin", "Europe/Lisbon",
-            "Europe/Athens", "Europe/Prague", "Europe/Warsaw", "Europe/Moscow",
+            "Europe/London",
+            "Europe/Paris",
+            "Europe/Berlin",
+            "Europe/Rome",
+            "Europe/Madrid",
+            "Europe/Amsterdam",
+            "Europe/Brussels",
+            "Europe/Vienna",
+            "Europe/Stockholm",
+            "Europe/Copenhagen",
+            "Europe/Dublin",
+            "Europe/Lisbon",
+            "Europe/Athens",
+            "Europe/Prague",
+            "Europe/Warsaw",
+            "Europe/Moscow",
             # Asia
-            "Asia/Tokyo", "Asia/Seoul", "Asia/Shanghai", "Asia/Hong_Kong",
-            "Asia/Singapore", "Asia/Bangkok", "Asia/Dubai", "Asia/Kolkata",
-            "Asia/Jerusalem", "Asia/Tehran",
+            "Asia/Tokyo",
+            "Asia/Seoul",
+            "Asia/Shanghai",
+            "Asia/Hong_Kong",
+            "Asia/Singapore",
+            "Asia/Bangkok",
+            "Asia/Dubai",
+            "Asia/Kolkata",
+            "Asia/Jerusalem",
+            "Asia/Tehran",
             # Pacific
-            "Pacific/Auckland", "Pacific/Sydney", "Pacific/Melbourne",
-            "Pacific/Fiji", "Pacific/Guam",
+            "Pacific/Auckland",
+            "Pacific/Sydney",
+            "Pacific/Melbourne",
+            "Pacific/Fiji",
+            "Pacific/Guam",
             # Australia
-            "Australia/Sydney", "Australia/Melbourne", "Australia/Brisbane",
-            "Australia/Perth", "Australia/Adelaide"
+            "Australia/Sydney",
+            "Australia/Melbourne",
+            "Australia/Brisbane",
+            "Australia/Perth",
+            "Australia/Adelaide"
           ]
 
           if timezone in valid_timezones do
@@ -164,18 +197,24 @@ defmodule PilatesOnPhx.Accounts.Organization do
         # Get actor's organization IDs from loaded memberships
         actor_id = actor.id
 
-        actor_org_ids = case Map.get(actor, :memberships) do
-          nil ->
-            # Try to load memberships
-            case Ash.load(actor, :memberships) do
-              {:ok, loaded_actor} ->
-                Enum.map(loaded_actor.memberships || [], & &1.organization_id)
-              _ -> []
-            end
-          memberships when is_list(memberships) ->
-            Enum.map(memberships, & &1.organization_id)
-          _ -> []
-        end
+        actor_org_ids =
+          case Map.get(actor, :memberships) do
+            nil ->
+              # Try to load memberships
+              case Ash.load(actor, :memberships) do
+                {:ok, loaded_actor} ->
+                  Enum.map(loaded_actor.memberships || [], & &1.organization_id)
+
+                _ ->
+                  []
+              end
+
+            memberships when is_list(memberships) ->
+              Enum.map(memberships, & &1.organization_id)
+
+            _ ->
+              []
+          end
 
         if Enum.empty?(actor_org_ids) do
           # If actor has no organizations, they can't see any

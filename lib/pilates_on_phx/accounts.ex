@@ -79,6 +79,4 @@ defmodule PilatesOnPhx.Accounts do
     resource PilatesOnPhx.Accounts.Token
     resource PilatesOnPhx.Accounts.OrganizationMembership
   end
-
-
 end

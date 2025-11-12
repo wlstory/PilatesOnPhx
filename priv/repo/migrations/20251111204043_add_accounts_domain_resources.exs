@@ -54,7 +54,8 @@ defmodule PilatesOnPhx.Repo.Migrations.AddAccountsDomainResources do
             name: "tokens_user_id_fkey",
             type: :uuid,
             prefix: "public"
-          ), null: false
+          ),
+          null: false
     end
 
     create table(:organizations, primary_key: false) do
@@ -95,7 +96,8 @@ defmodule PilatesOnPhx.Repo.Migrations.AddAccountsDomainResources do
             name: "organization_memberships_user_id_fkey",
             type: :uuid,
             prefix: "public"
-          ), null: false
+          ),
+          null: false
 
       add :organization_id,
           references(:organizations,
@@ -103,7 +105,8 @@ defmodule PilatesOnPhx.Repo.Migrations.AddAccountsDomainResources do
             name: "organization_memberships_organization_id_fkey",
             type: :uuid,
             prefix: "public"
-          ), null: false
+          ),
+          null: false
     end
 
     create unique_index(:organization_memberships, [:user_id, :organization_id],

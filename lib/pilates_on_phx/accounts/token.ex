@@ -53,9 +53,7 @@ defmodule PilatesOnPhx.Accounts.Token do
       allow_nil? false
       default :bearer
       public? true
-      constraints [
-        one_of: [:bearer, :refresh, :password_reset, :email_confirmation]
-      ]
+      constraints one_of: [:bearer, :refresh, :password_reset, :email_confirmation]
     end
 
     attribute :revoked_at, :utc_datetime_usec do
@@ -88,8 +86,14 @@ defmodule PilatesOnPhx.Accounts.Token do
         changeset
         |> Ash.Changeset.change_new_attribute(:jti, Ash.UUID.generate())
         |> Ash.Changeset.change_new_attribute(:purpose, "user")
-        |> Ash.Changeset.change_new_attribute(:subject, to_string(changeset.arguments[:user_id] || ""))
-        |> Ash.Changeset.change_new_attribute(:expires_at, DateTime.add(DateTime.utc_now(), 3600, :second))
+        |> Ash.Changeset.change_new_attribute(
+          :subject,
+          to_string(changeset.arguments[:user_id] || "")
+        )
+        |> Ash.Changeset.change_new_attribute(
+          :expires_at,
+          DateTime.add(DateTime.utc_now(), 3600, :second)
+        )
         |> Ash.Changeset.change_new_attribute(:extra_data, %{})
       end
     end

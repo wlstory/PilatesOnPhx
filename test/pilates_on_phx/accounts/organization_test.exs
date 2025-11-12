@@ -17,9 +17,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       }
 
       assert {:ok, org} =
-        Organization
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert org.name == "Test Pilates Studio"
       assert org.timezone == "America/New_York"
@@ -34,9 +34,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       }
 
       assert {:error, %Ash.Error.Invalid{} = error} =
-        Organization
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       changeset = error.changeset
       assert changeset.valid? == false
@@ -51,9 +51,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       }
 
       assert {:error, %Ash.Error.Invalid{} = error} =
-        Organization
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       changeset = error.changeset
       assert changeset.valid? == false
@@ -71,9 +71,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       }
 
       assert {:error, %Ash.Error.Invalid{} = error} =
-        Organization
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       changeset = error.changeset
       assert changeset.valid? == false
@@ -86,9 +86,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       }
 
       assert {:ok, org} =
-        Organization
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       # Should have a default timezone (e.g., "UTC" or "America/New_York")
       assert org.timezone != nil
@@ -101,9 +101,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       }
 
       assert {:ok, org} =
-        Organization
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert org.active == true
     end
@@ -114,9 +114,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       }
 
       assert {:ok, org} =
-        Organization
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert org.settings == %{} or is_map(org.settings)
     end
@@ -136,9 +136,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       }
 
       assert {:ok, org} =
-        Organization
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert org.settings["booking_window_days"] == 30
       assert org.settings["cancellation_hours"] == 24
@@ -152,9 +152,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       }
 
       assert {:error, %Ash.Error.Invalid{} = error} =
-        Organization
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       changeset = error.changeset
       assert changeset.valid? == false
@@ -179,9 +179,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
         }
 
         assert {:ok, org} =
-          Organization
-          |> Ash.Changeset.for_create(:create, attrs)
-          |> Ash.create(domain: Accounts)
+                 Organization
+                 |> Ash.Changeset.for_create(:create, attrs)
+                 |> Ash.create(domain: Accounts)
 
         assert org.timezone == tz
       end)
@@ -193,9 +193,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       org = create_organization(name: "Original Name")
 
       assert {:ok, updated} =
-        org
-        |> Ash.Changeset.for_update(:update, %{name: "New Name"}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               org
+               |> Ash.Changeset.for_update(:update, %{name: "New Name"}, actor: bypass_actor())
+               |> Ash.update(domain: Accounts)
 
       assert updated.name == "New Name"
       assert updated.id == org.id
@@ -205,9 +205,11 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       org = create_organization(timezone: "America/New_York")
 
       assert {:ok, updated} =
-        org
-        |> Ash.Changeset.for_update(:update, %{timezone: "America/Los_Angeles"}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               org
+               |> Ash.Changeset.for_update(:update, %{timezone: "America/Los_Angeles"},
+                 actor: bypass_actor()
+               )
+               |> Ash.update(domain: Accounts)
 
       assert updated.timezone == "America/Los_Angeles"
     end
@@ -221,24 +223,26 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       }
 
       assert {:ok, updated} =
-        org
-        |> Ash.Changeset.for_update(:update, %{settings: new_settings}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               org
+               |> Ash.Changeset.for_update(:update, %{settings: new_settings},
+                 actor: bypass_actor()
+               )
+               |> Ash.update(domain: Accounts)
 
       # Settings are stored as JSON, so keys become strings
       assert updated.settings == %{
-        "booking_window_days" => 14,
-        "new_feature" => "enabled"
-      }
+               "booking_window_days" => 14,
+               "new_feature" => "enabled"
+             }
     end
 
     test "can activate inactive organization" do
       org = create_organization(active: false)
 
       assert {:ok, updated} =
-        org
-        |> Ash.Changeset.for_update(:update, %{active: true}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               org
+               |> Ash.Changeset.for_update(:update, %{active: true}, actor: bypass_actor())
+               |> Ash.update(domain: Accounts)
 
       assert updated.active == true
     end
@@ -247,9 +251,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       org = create_organization(active: true)
 
       assert {:ok, updated} =
-        org
-        |> Ash.Changeset.for_update(:update, %{active: false}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               org
+               |> Ash.Changeset.for_update(:update, %{active: false}, actor: bypass_actor())
+               |> Ash.update(domain: Accounts)
 
       assert updated.active == false
     end
@@ -258,9 +262,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       org = create_organization()
 
       assert {:error, %Ash.Error.Invalid{} = error} =
-        org
-        |> Ash.Changeset.for_update(:update, %{name: ""}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               org
+               |> Ash.Changeset.for_update(:update, %{name: ""}, actor: bypass_actor())
+               |> Ash.update(domain: Accounts)
 
       changeset = error.changeset
       assert changeset.valid? == false
@@ -272,9 +276,11 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       org = create_organization()
 
       assert {:error, %Ash.Error.Invalid{} = error} =
-        org
-        |> Ash.Changeset.for_update(:update, %{timezone: "Invalid/Zone"}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               org
+               |> Ash.Changeset.for_update(:update, %{timezone: "Invalid/Zone"},
+                 actor: bypass_actor()
+               )
+               |> Ash.update(domain: Accounts)
 
       changeset = error.changeset
       assert changeset.valid? == false
@@ -286,9 +292,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       org = create_organization(active: true)
 
       assert {:ok, deactivated} =
-        org
-        |> Ash.Changeset.for_update(:deactivate, %{}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               org
+               |> Ash.Changeset.for_update(:deactivate, %{}, actor: bypass_actor())
+               |> Ash.update(domain: Accounts)
 
       assert deactivated.active == false
     end
@@ -304,9 +310,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
 
       # Deactivate again
       assert {:ok, still_deactivated} =
-        deactivated
-        |> Ash.Changeset.for_update(:deactivate, %{}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               deactivated
+               |> Ash.Changeset.for_update(:deactivate, %{}, actor: bypass_actor())
+               |> Ash.update(domain: Accounts)
 
       assert still_deactivated.active == false
     end
@@ -317,9 +323,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       org = create_organization(active: false)
 
       assert {:ok, activated} =
-        org
-        |> Ash.Changeset.for_update(:activate, %{}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               org
+               |> Ash.Changeset.for_update(:activate, %{}, actor: bypass_actor())
+               |> Ash.update(domain: Accounts)
 
       assert activated.active == true
     end
@@ -335,9 +341,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
 
       # Activate again
       assert {:ok, still_activated} =
-        activated
-        |> Ash.Changeset.for_update(:activate, %{}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               activated
+               |> Ash.Changeset.for_update(:activate, %{}, actor: bypass_actor())
+               |> Ash.update(domain: Accounts)
 
       assert still_activated.active == true
     end
@@ -369,9 +375,10 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       client = create_user(organization: org, role: :client)
 
       # Update memberships with proper roles
-      owner_membership = Accounts.OrganizationMembership
-      |> Ash.Query.filter(user_id == ^owner.id and organization_id == ^org.id)
-      |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
+      owner_membership =
+        Accounts.OrganizationMembership
+        |> Ash.Query.filter(user_id == ^owner.id and organization_id == ^org.id)
+        |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
       owner_membership
       |> Ash.Changeset.for_update(:update, %{role: :owner}, actor: bypass_actor())
@@ -404,25 +411,27 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
 
   describe "organization settings and configuration" do
     test "stores booking window configuration" do
-      org = create_organization(
-        settings: %{
-          booking_window_days: 30,
-          booking_cutoff_hours: 2
-        }
-      )
+      org =
+        create_organization(
+          settings: %{
+            booking_window_days: 30,
+            booking_cutoff_hours: 2
+          }
+        )
 
       assert org.settings["booking_window_days"] == 30
       assert org.settings["booking_cutoff_hours"] == 2
     end
 
     test "stores cancellation policy settings" do
-      org = create_organization(
-        settings: %{
-          cancellation_hours: 24,
-          late_cancel_fee: 15.00,
-          no_show_fee: 25.00
-        }
-      )
+      org =
+        create_organization(
+          settings: %{
+            cancellation_hours: 24,
+            late_cancel_fee: 15.00,
+            no_show_fee: 25.00
+          }
+        )
 
       assert org.settings["cancellation_hours"] == 24
       assert org.settings["late_cancel_fee"] == 15.00
@@ -430,13 +439,14 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
     end
 
     test "stores waitlist configuration" do
-      org = create_organization(
-        settings: %{
-          waitlist_enabled: true,
-          auto_fill_from_waitlist: true,
-          waitlist_notification_hours: 12
-        }
-      )
+      org =
+        create_organization(
+          settings: %{
+            waitlist_enabled: true,
+            auto_fill_from_waitlist: true,
+            waitlist_notification_hours: 12
+          }
+        )
 
       assert org.settings["waitlist_enabled"] == true
       assert org.settings["auto_fill_from_waitlist"] == true
@@ -444,15 +454,16 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
     end
 
     test "stores notification preferences" do
-      org = create_organization(
-        settings: %{
-          notifications: %{
-            reminder_hours_before: [24, 2],
-            enable_sms: true,
-            enable_email: true
+      org =
+        create_organization(
+          settings: %{
+            notifications: %{
+              reminder_hours_before: [24, 2],
+              enable_sms: true,
+              enable_email: true
+            }
           }
-        }
-      )
+        )
 
       notifications = org.settings["notifications"]
       assert notifications["reminder_hours_before"] == [24, 2]
@@ -461,13 +472,14 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
     end
 
     test "stores class scheduling defaults" do
-      org = create_organization(
-        settings: %{
-          default_class_duration: 50,
-          max_class_capacity: 12,
-          min_advance_booking_hours: 1
-        }
-      )
+      org =
+        create_organization(
+          settings: %{
+            default_class_duration: 50,
+            max_class_capacity: 12,
+            min_advance_booking_hours: 1
+          }
+        )
 
       assert org.settings["default_class_duration"] == 50
       assert org.settings["max_class_capacity"] == 12
@@ -475,21 +487,22 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
     end
 
     test "handles nested settings structures" do
-      org = create_organization(
-        settings: %{
-          features: %{
-            online_booking: true,
-            packages: %{
-              enabled: true,
-              types: ["10-pack", "20-pack", "unlimited"]
+      org =
+        create_organization(
+          settings: %{
+            features: %{
+              online_booking: true,
+              packages: %{
+                enabled: true,
+                types: ["10-pack", "20-pack", "unlimited"]
+              }
+            },
+            branding: %{
+              primary_color: "#4A5568",
+              logo_url: "https://example.com/logo.png"
             }
-          },
-          branding: %{
-            primary_color: "#4A5568",
-            logo_url: "https://example.com/logo.png"
           }
-        }
-      )
+        )
 
       assert org.settings["features"]["online_booking"] == true
       assert org.settings["features"]["packages"]["enabled"] == true
@@ -572,30 +585,35 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
     end
 
     test "organization data does not leak between tenants" do
-      scenario1 = create_organization_scenario(%{
-        instructor_count: 2,
-        client_count: 5
-      })
+      scenario1 =
+        create_organization_scenario(%{
+          instructor_count: 2,
+          client_count: 5
+        })
 
-      scenario2 = create_organization_scenario(%{
-        instructor_count: 3,
-        client_count: 10
-      })
+      scenario2 =
+        create_organization_scenario(%{
+          instructor_count: 3,
+          client_count: 10
+        })
 
       # Load organization 1 users
       org1_users =
         Accounts.User
         |> Ash.Query.filter(
-          id in ^(Enum.map(scenario1.organization.memberships, & &1.user_id) || [scenario1.owner.id])
+          id in ^(Enum.map(scenario1.organization.memberships, & &1.user_id) ||
+                    [scenario1.owner.id])
         )
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
       # Verify no users from org2 appear in org1
-      org2_user_ids = [scenario2.owner.id | Enum.map(scenario2.instructors ++ scenario2.clients, & &1.id)]
+      org2_user_ids = [
+        scenario2.owner.id | Enum.map(scenario2.instructors ++ scenario2.clients, & &1.id)
+      ]
 
       Enum.each(org1_users, fn user ->
         refute user.id in org2_user_ids,
-          "User from organization 2 leaked into organization 1 query"
+               "User from organization 2 leaked into organization 1 query"
       end)
     end
   end
@@ -653,9 +671,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       org = scenario.organization
 
       assert {:ok, updated} =
-        org
-        |> Ash.Changeset.for_update(:update, %{name: "Updated by Owner"}, actor: owner)
-        |> Ash.update(domain: Accounts)
+               org
+               |> Ash.Changeset.for_update(:update, %{name: "Updated by Owner"}, actor: owner)
+               |> Ash.update(domain: Accounts)
 
       assert updated.name == "Updated by Owner"
     end
@@ -665,9 +683,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       member = create_user(organization: org, role: :client)
 
       assert {:ok, loaded} =
-        Organization
-        |> Ash.Query.filter(id == ^org.id)
-        |> Ash.read_one(domain: Accounts, actor: member)
+               Organization
+               |> Ash.Query.filter(id == ^org.id)
+               |> Ash.read_one(domain: Accounts, actor: member)
 
       assert loaded.id == org.id
     end
@@ -680,9 +698,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
 
       # User from org1 should not be able to read org2 (preparation filter prevents access)
       assert {:ok, nil} =
-        Organization
-        |> Ash.Query.filter(id == ^org2.id)
-        |> Ash.read_one(domain: Accounts, actor: user1)
+               Organization
+               |> Ash.Query.filter(id == ^org2.id)
+               |> Ash.read_one(domain: Accounts, actor: user1)
     end
 
     @tag :skip
@@ -692,9 +710,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       member = create_user(organization: org, role: :client)
 
       assert {:error, %Ash.Error.Forbidden{}} =
-        org
-        |> Ash.Changeset.for_update(:update, %{name: "Unauthorized Update"}, actor: member)
-        |> Ash.update(domain: Accounts)
+               org
+               |> Ash.Changeset.for_update(:update, %{name: "Unauthorized Update"}, actor: member)
+               |> Ash.update(domain: Accounts)
     end
 
     @tag :skip
@@ -704,9 +722,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       instructor = create_user(organization: org, role: :instructor)
 
       assert {:error, %Ash.Error.Forbidden{}} =
-        org
-        |> Ash.Changeset.for_update(:deactivate, %{}, actor: instructor)
-        |> Ash.update(domain: Accounts)
+               org
+               |> Ash.Changeset.for_update(:deactivate, %{}, actor: instructor)
+               |> Ash.update(domain: Accounts)
     end
   end
 
@@ -717,9 +735,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       attrs = %{name: long_name}
 
       assert {:error, %Ash.Error.Invalid{} = error} =
-        Organization
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       changeset = error.changeset
       assert changeset.valid? == false
@@ -731,9 +749,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       }
 
       assert {:ok, org} =
-        Organization
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert org.name == "Estudio de Pilates José García 体育馆"
     end
@@ -744,9 +762,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       }
 
       assert {:ok, org} =
-        Organization
-        |> Ash.Changeset.for_create(:create, attrs)
-        |> Ash.create(domain: Accounts)
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
 
       assert org.name == "Studio @ Main St. #1 & Wellness Center"
     end
@@ -755,9 +773,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       org = create_organization()
 
       assert {:error, %Ash.Error.Invalid{} = error} =
-        org
-        |> Ash.Changeset.for_update(:update, %{settings: nil}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+               org
+               |> Ash.Changeset.for_update(:update, %{settings: nil}, actor: bypass_actor())
+               |> Ash.update(domain: Accounts)
 
       changeset = error.changeset
       assert changeset.valid? == false
@@ -778,51 +796,57 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
 
       org = create_organization(settings: deep_settings)
 
-      assert org.settings["level1"]["level2"]["level3"]["level4"]["deeply_nested_value"] == "found"
+      assert org.settings["level1"]["level2"]["level3"]["level4"]["deeply_nested_value"] ==
+               "found"
     end
   end
 
   describe "concurrent organization operations" do
     test "handles concurrent organization creation" do
-      tasks = Enum.map(1..5, fn i ->
-        Task.async(fn ->
-          attrs = %{name: "Concurrent Studio #{i}"}
+      tasks =
+        Enum.map(1..5, fn i ->
+          Task.async(fn ->
+            attrs = %{name: "Concurrent Studio #{i}"}
 
-          Organization
-          |> Ash.Changeset.for_create(:create, attrs)
-          |> Ash.create(domain: Accounts)
+            Organization
+            |> Ash.Changeset.for_create(:create, attrs)
+            |> Ash.create(domain: Accounts)
+          end)
         end)
-      end)
 
       results = Task.await_many(tasks)
 
       # All should succeed with unique names
       assert Enum.all?(results, fn
-        {:ok, _org} -> true
-        _ -> false
-      end)
+               {:ok, _org} -> true
+               _ -> false
+             end)
     end
 
     test "handles concurrent updates to same organization" do
       org = create_organization()
 
-      tasks = Enum.map(1..3, fn i ->
-        Task.async(fn ->
-          org
-          |> Ash.Changeset.for_update(:update, %{
-            name: "Updated Name #{i}"
-          }, actor: bypass_actor())
-          |> Ash.update(domain: Accounts)
+      tasks =
+        Enum.map(1..3, fn i ->
+          Task.async(fn ->
+            org
+            |> Ash.Changeset.for_update(
+              :update,
+              %{
+                name: "Updated Name #{i}"
+              }, actor: bypass_actor())
+            |> Ash.update(domain: Accounts)
+          end)
         end)
-      end)
 
       results = Task.await_many(tasks)
 
       # All should succeed or fail gracefully
-      successful = Enum.filter(results, fn
-        {:ok, _} -> true
-        _ -> false
-      end)
+      successful =
+        Enum.filter(results, fn
+          {:ok, _} -> true
+          _ -> false
+        end)
 
       assert length(successful) >= 1
     end
@@ -836,9 +860,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
 
       # Verify organization is gone
       assert {:error, %Ash.Error.Query.NotFound{}} =
-        Organization
-        |> Ash.Query.filter(id == ^org.id)
-        |> Ash.read_one(domain: Accounts, actor: bypass_actor())
+               Organization
+               |> Ash.Query.filter(id == ^org.id)
+               |> Ash.read_one(domain: Accounts, actor: bypass_actor())
     end
 
     @tag :skip
