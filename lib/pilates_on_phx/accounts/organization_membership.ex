@@ -68,14 +68,22 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
   end
 
   actions do
-    defaults [:read, :destroy]
+    defaults [:read]
 
     create :create do
+      primary? true
       accept [:role, :joined_at, :user_id, :organization_id]
     end
 
     update :update do
+      primary? true
+      require_atomic? false
       accept [:role]
+    end
+
+    destroy :destroy do
+      primary? true
+      require_atomic? false
     end
   end
 

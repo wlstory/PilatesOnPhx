@@ -457,7 +457,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       memberships =
         OrganizationMembership
         |> Ash.Query.filter(organization_id == ^org.id)
-        |> Ash.read!(domain: Accounts)
+        |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
       assert length(memberships) >= 3
 
@@ -480,7 +480,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       memberships =
         OrganizationMembership
         |> Ash.Query.filter(user_id == ^user.id)
-        |> Ash.read!(domain: Accounts)
+        |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
       assert length(memberships) == 3
 
@@ -503,7 +503,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       owners =
         OrganizationMembership
         |> Ash.Query.filter(organization_id == ^org.id and role == :owner)
-        |> Ash.read!(domain: Accounts)
+        |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
       assert length(owners) >= 1
       assert Enum.all?(owners, fn m -> m.role == :owner end)
@@ -549,7 +549,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       recent_memberships =
         OrganizationMembership
         |> Ash.Query.filter(organization_id == ^org.id and joined_at >= ^cutoff_date)
-        |> Ash.read!(domain: Accounts)
+        |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
       membership_ids = Enum.map(recent_memberships, & &1.id)
 
@@ -579,7 +579,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
         OrganizationMembership
         |> Ash.Query.filter(user_id == ^instructor.id)
         |> Ash.Query.load(:organization)
-        |> Ash.read!(domain: Accounts)
+        |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
       assert length(memberships) == 3
 
@@ -608,7 +608,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
         OrganizationMembership
         |> Ash.Query.filter(user_id == ^multi_owner.id)
         |> Ash.Query.load(:organization)
-        |> Ash.read!(domain: Accounts)
+        |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
       assert length(memberships) == 3
 
@@ -633,7 +633,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       memberships =
         OrganizationMembership
         |> Ash.Query.filter(user_id == ^client.id)
-        |> Ash.read!(domain: Accounts)
+        |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
       assert length(memberships) == 3
       assert Enum.all?(memberships, fn m -> m.role == :member end)
@@ -699,8 +699,8 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
 
       assert :ok = Ash.destroy(membership, domain: Accounts, actor: bypass_actor())
 
-      # Verify membership is gone
-      assert {:error, %Ash.Error.Query.NotFound{}} =
+      # Verify membership is gone (policy-filtered reads return {:ok, nil} not {:error, NotFound})
+      assert {:ok, nil} =
                OrganizationMembership
                |> Ash.Query.filter(id == ^membership.id)
                |> Ash.read_one(domain: Accounts, actor: bypass_actor())
@@ -741,7 +741,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       remaining_memberships =
         OrganizationMembership
         |> Ash.Query.filter(id in ^[mem1.id, mem2.id])
-        |> Ash.read!(domain: Accounts)
+        |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
       assert remaining_memberships == []
     end
@@ -887,13 +887,13 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
 
       membership
       |> Ash.Changeset.for_update(:update, %{role: :owner}, actor: bypass_actor())
-      |> Ash.update!(domain: Accounts)
+      |> Ash.update!(domain: Accounts, actor: bypass_actor())
 
       # Try to demote the only owner - should either fail or be handled by business logic
       result =
         membership
         |> Ash.Changeset.for_update(:update, %{role: :member}, actor: bypass_actor())
-        |> Ash.update(domain: Accounts)
+        |> Ash.update(domain: Accounts, actor: bypass_actor())
 
       case result do
         {:error, changeset} ->
@@ -905,7 +905,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
           owners =
             OrganizationMembership
             |> Ash.Query.filter(organization_id == ^org.id and role == :owner)
-            |> Ash.read!(domain: Accounts)
+            |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
           # Either the update maintained owner role or there's another owner
           # Business logic may allow this

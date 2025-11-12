@@ -597,11 +597,18 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
           client_count: 10
         })
 
+      # Load organization 1 with memberships
+      org1_with_memberships =
+        Organization
+        |> Ash.Query.filter(id == ^scenario1.organization.id)
+        |> Ash.Query.load(:memberships)
+        |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
+
       # Load organization 1 users
       org1_users =
         Accounts.User
         |> Ash.Query.filter(
-          id in ^(Enum.map(scenario1.organization.memberships, & &1.user_id) ||
+          id in ^(Enum.map(org1_with_memberships.memberships, & &1.user_id) ||
                     [scenario1.owner.id])
         )
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
@@ -858,8 +865,8 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
 
       assert :ok = Ash.destroy(org, domain: Accounts, actor: bypass_actor())
 
-      # Verify organization is gone
-      assert {:error, %Ash.Error.Query.NotFound{}} =
+      # Verify organization is gone (policy-filtered reads return {:ok, nil} not {:error, NotFound})
+      assert {:ok, nil} =
                Organization
                |> Ash.Query.filter(id == ^org.id)
                |> Ash.read_one(domain: Accounts, actor: bypass_actor())
