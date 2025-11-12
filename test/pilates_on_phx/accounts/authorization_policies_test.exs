@@ -138,15 +138,15 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       # User1 can access their own token
       assert {:ok, loaded_token} =
         Token
-        |> Ash.Query.filter(id == ^token1.id)
+        |> Ash.Query.filter(jti == ^token1.jti)
         |> Ash.read_one(domain: Accounts, actor: user1)
 
-      assert loaded_token.id == token1.id
+      assert loaded_token.jti == token1.jti
 
       # User1 cannot access user2's token
       assert {:error, %Ash.Error.Forbidden{}} =
         Token
-        |> Ash.Query.filter(id == ^token2.id)
+        |> Ash.Query.filter(jti == ^token2.jti)
         |> Ash.read_one(domain: Accounts, actor: user1)
     end
   end
@@ -428,7 +428,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       # User can revoke their own token
       assert {:ok, revoked} =
         token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()}, actor: user)
+        |> Ash.Changeset.for_update(:revoke, %{}, actor: user)
         |> Accounts.update()
 
       assert revoked.revoked_at != nil
@@ -442,7 +442,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       assert {:error, %Ash.Error.Forbidden{}} =
         token2
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()}, actor: user1)
+        |> Ash.Changeset.for_update(:revoke, %{}, actor: user1)
         |> Accounts.update()
     end
   end
@@ -726,7 +726,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       # Token should be deleted
       result =
         Token
-        |> Ash.Query.filter(id == ^token.id)
+        |> Ash.Query.filter(jti == ^token.jti)
         |> Ash.read_one(domain: Accounts, actor: bypass_actor())
 
       assert match?({:error, %Ash.Error.Query.NotFound{}}, result)

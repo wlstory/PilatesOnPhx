@@ -24,7 +24,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
         |> Ash.create(domain: Accounts)
 
       assert token.user_id == user.id
-      assert token.token_type == "bearer"
+      assert token.token_type == :bearer
       assert token.expires_at != nil
       assert token.jti != nil  # JWT ID should be generated
     end
@@ -73,7 +73,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
 
-      assert token.token_type == "bearer"
+      assert token.token_type == :bearer
     end
 
     test "sets default expiration if not provided" do
@@ -166,10 +166,10 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
         |> Ash.Query.filter(user_id == ^user.id)
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
-      token_ids = Enum.map(tokens, & &1.id)
-      assert token1.id in token_ids
-      assert token2.id in token_ids
-      assert token3.id in token_ids
+      token_jtis = Enum.map(tokens, & &1.jti)
+      assert token1.jti in token_jtis
+      assert token2.jti in token_jtis
+      assert token3.jti in token_jtis
     end
   end
 
@@ -178,7 +178,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       user = create_user()
       token = create_token(user: user, token_type: "bearer")
 
-      assert token.token_type == "bearer"
+      assert token.token_type == :bearer
     end
 
     test "supports refresh token type" do
@@ -195,7 +195,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
 
-      assert token.token_type == "refresh"
+      assert token.token_type == :refresh
     end
 
     test "supports password_reset token type" do
@@ -212,7 +212,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
 
-      assert token.token_type == "password_reset"
+      assert token.token_type == :password_reset
     end
 
     test "supports email_confirmation token type" do
@@ -229,7 +229,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
 
-      assert token.token_type == "email_confirmation"
+      assert token.token_type == :email_confirmation
     end
   end
 
@@ -336,15 +336,16 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       user = create_user()
       token = create_token(user: user)
 
-      revoked_at = DateTime.utc_now()
+      before_revoke = DateTime.utc_now()
 
       assert {:ok, revoked} =
         token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: revoked_at})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       assert revoked.revoked_at != nil
-      assert DateTime.compare(revoked.revoked_at, revoked_at) == :eq
+      # The revoked_at should be set to approximately now (within a few seconds)
+      assert DateTime.diff(revoked.revoked_at, before_revoke, :second) in 0..2
     end
 
     test "can query active (non-revoked) tokens" do
@@ -357,7 +358,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       revoked_token = create_token(user: user)
       {:ok, _} =
         revoked_token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       active_tokens =
@@ -365,10 +366,10 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
         |> Ash.Query.filter(user_id == ^user.id and is_nil(revoked_at))
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
-      token_ids = Enum.map(active_tokens, & &1.id)
-      assert active1.id in token_ids
-      assert active2.id in token_ids
-      refute revoked_token.id in token_ids
+      token_jtis = Enum.map(active_tokens, & &1.jti)
+      assert active1.jti in token_jtis
+      assert active2.jti in token_jtis
+      refute revoked_token.jti in token_jtis
     end
 
     test "can query revoked tokens" do
@@ -378,13 +379,13 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       token1 = create_token(user: user)
       {:ok, _} =
         token1
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       token2 = create_token(user: user)
       {:ok, _} =
         token2
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       # Create active token
@@ -404,16 +405,16 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       {:ok, _} =
         token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       # Token should still exist
       found =
         Token
-        |> Ash.Query.filter(id == ^token.id)
+        |> Ash.Query.filter(jti == ^token.jti)
         |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
-      assert found.id == token.id
+      assert found.jti == token.jti
       assert found.revoked_at != nil
     end
 
@@ -432,7 +433,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       |> Ash.read!(domain: Accounts, actor: bypass_actor())
       |> Enum.each(fn token ->
         token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: now})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update!(domain: Accounts)
       end)
 
@@ -453,7 +454,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       loaded_token =
         Token
-        |> Ash.Query.filter(id == ^token.id)
+        |> Ash.Query.filter(jti == ^token.jti)
         |> Ash.Query.load(:user)
         |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
@@ -534,11 +535,11 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       bearer_tokens =
         Token
-        |> Ash.Query.filter(user_id == ^user.id and token_type == "bearer")
+        |> Ash.Query.filter(user_id == ^user.id and token_type == :bearer)
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
       assert length(bearer_tokens) >= 2
-      assert Enum.all?(bearer_tokens, fn t -> t.token_type == "bearer" end)
+      assert Enum.all?(bearer_tokens, fn t -> t.token_type == :bearer end)
     end
 
     test "can find token by jti" do
@@ -550,7 +551,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
         |> Ash.Query.filter(jti == ^token.jti)
         |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
-      assert found.id == token.id
+      assert found.jti == token.jti
     end
 
     test "can filter valid tokens (not expired and not revoked)" do
@@ -566,7 +567,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       revoked = create_token(user: user)
       {:ok, revoked} =
         revoked
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       now = DateTime.utc_now()
@@ -580,9 +581,9 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
         )
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
-      token_ids = Enum.map(valid_tokens, & &1.id)
-      assert valid_token.id in token_ids
-      refute revoked.id in token_ids
+      token_jtis = Enum.map(valid_tokens, & &1.jti)
+      assert valid_token.jti in token_jtis
+      refute revoked.jti in token_jtis
     end
   end
 
@@ -605,8 +606,8 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       {:ok, updated} =
         token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
-        |> Ash.update(domain: Accounts)
+        |> Ash.Changeset.for_update(:revoke, %{})
+        |> Ash.update(domain: Accounts, actor: user)
 
       assert DateTime.compare(updated.updated_at, original_updated_at) == :gt
     end
@@ -641,7 +642,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       # Revoke token
       {:ok, revoked} =
         token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       # Token is now revoked
@@ -765,7 +766,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       # Token should be gone
       assert {:error, %Ash.Error.Query.NotFound{}} =
         Token
-        |> Ash.Query.filter(id == ^token.id)
+        |> Ash.Query.filter(jti == ^token.jti)
         |> Ash.read_one(domain: Accounts, actor: bypass_actor())
     end
 
@@ -808,7 +809,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       {:ok, old_revoked} =
         old_revoked
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: week_ago})
+        |> Ash.Changeset.for_update(:test_set_revoked_at, %{revoked_at: week_ago})
         |> Ash.update(domain: Accounts)
 
       # Query old revoked tokens
@@ -820,8 +821,8 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
       # Should find the old revoked token
-      token_ids = Enum.map(old_revoked_tokens, & &1.id)
-      assert old_revoked.id in token_ids
+      token_jtis = Enum.map(old_revoked_tokens, & &1.jti)
+      assert old_revoked.jti in token_jtis
     end
   end
 
@@ -832,10 +833,10 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       loaded =
         Token
-        |> Ash.Query.filter(id == ^token.id)
-        |> Accounts.read_one!(actor: user)
+        |> Ash.Query.filter(jti == ^token.jti)
+        |> Ash.read_one!(domain: Accounts, actor: user)
 
-      assert loaded.id == token.id
+      assert loaded.jti == token.jti
     end
 
     test "user cannot access other users' tokens" do
@@ -846,8 +847,8 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       assert {:error, %Ash.Error.Forbidden{}} =
         Token
-        |> Ash.Query.filter(id == ^token2.id)
-        |> Accounts.read_one(actor: user1)
+        |> Ash.Query.filter(jti == ^token2.jti)
+        |> Ash.read_one(domain: Accounts, actor: user1)
     end
 
     test "user can revoke their own tokens" do
@@ -856,7 +857,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       assert {:ok, revoked} =
         token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()}, actor: user)
+        |> Ash.Changeset.for_update(:revoke, %{}, actor: user)
         |> Ash.update(domain: Accounts)
 
       assert revoked.revoked_at != nil
@@ -870,7 +871,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       assert {:error, %Ash.Error.Forbidden{}} =
         token2
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()}, actor: user1)
+        |> Ash.Changeset.for_update(:revoke, %{}, actor: user1)
         |> Ash.update(domain: Accounts)
     end
   end

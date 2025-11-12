@@ -96,6 +96,11 @@ defmodule PilatesOnPhx.Accounts.Token do
       accept []
       change set_attribute(:revoked_at, &DateTime.utc_now/0)
     end
+
+    # Test-only action for setting specific revoked_at timestamps
+    update :test_set_revoked_at do
+      accept [:revoked_at]
+    end
   end
 
   preparations do

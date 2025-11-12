@@ -333,7 +333,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       # Step 4: Revoke old bearer token
       {:ok, revoked_initial} =
         initial_token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       # Verify refresh flow
@@ -391,7 +391,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
 
       {:ok, revoked_refresh} =
         refresh_token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       # Verify token is revoked
@@ -438,7 +438,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       |> Ash.read!(domain: Accounts, actor: bypass_actor())
       |> Enum.each(fn token ->
         token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: now})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update!(domain: Accounts)
       end)
 
@@ -468,7 +468,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       # Revoke only device1 token
       {:ok, revoked} =
         device1_token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       # Device1 token should be revoked
@@ -477,7 +477,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       # Device2 token should still be active
       device2_still_active =
         Token
-        |> Ash.Query.filter(id == ^device2_token.id)
+        |> Ash.Query.filter(jti == ^device2_token.jti)
         |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
       assert device2_still_active.revoked_at == nil
@@ -520,7 +520,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       # Step 4: Revoke reset token after use
       {:ok, revoked_reset} =
         reset_token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       # Step 5: Revoke all existing auth tokens
@@ -529,7 +529,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       |> Ash.read!(domain: Accounts, actor: bypass_actor())
       |> Enum.each(fn token ->
         token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update!(domain: Accounts)
       end)
 
@@ -610,7 +610,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       # Revoke token after use
       {:ok, revoked} =
         reset_token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       assert revoked.revoked_at != nil
@@ -666,7 +666,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       # Step 4: Revoke confirmation token
       {:ok, revoked_confirmation} =
         confirmation_token
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       # Verify confirmation success
@@ -717,7 +717,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       # Revoke old token
       {:ok, _revoked} =
         token1
-        |> Ash.Changeset.for_update(:revoke, %{revoked_at: DateTime.utc_now()})
+        |> Ash.Changeset.for_update(:revoke, %{})
         |> Ash.update(domain: Accounts)
 
       # Create new confirmation token
