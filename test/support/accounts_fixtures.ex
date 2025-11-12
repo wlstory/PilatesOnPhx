@@ -102,10 +102,10 @@ defmodule PilatesOnPhx.AccountsFixtures do
     # Create organization membership
     create_organization_membership(user: user, organization: organization)
 
-    # Reload user with memberships
+    # Reload user with memberships and organizations for policy checks
     User
     |> Ash.Query.filter(id == ^user.id)
-    |> Ash.Query.load(:memberships)
+    |> Ash.Query.load([:memberships, :organizations])
     |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
   end
 
@@ -154,7 +154,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
       create_organization_membership(user: user, organization: org)
     end)
 
-    # Reload user with all memberships
+    # Reload user with all memberships and organizations for policy checks
     User
     |> Ash.Query.filter(id == ^user.id)
     |> Ash.Query.load([:memberships, :organizations])

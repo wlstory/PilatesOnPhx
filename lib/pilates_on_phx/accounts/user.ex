@@ -136,6 +136,48 @@ defmodule PilatesOnPhx.Accounts.User do
     identity :unique_email, [:email]
   end
 
+  preparations do
+    # Filter users to only those in shared organizations with the actor
+    prepare fn query, context ->
+      require Ash.Query
+
+      actor = Map.get(context, :actor)
+
+      if actor && !Map.get(actor, :bypass_strict_access, false) do
+        # Get actor's organization IDs from loaded memberships
+        actor = context.actor
+        actor_id = actor.id
+
+        actor_org_ids = case Map.get(actor, :memberships) do
+          nil ->
+            # Try to load memberships
+            case Ash.load(actor, :memberships) do
+              {:ok, loaded_actor} ->
+                Enum.map(loaded_actor.memberships || [], & &1.organization_id)
+              _ -> []
+            end
+          memberships when is_list(memberships) ->
+            Enum.map(memberships, & &1.organization_id)
+          _ -> []
+        end
+
+        if Enum.empty?(actor_org_ids) do
+          # If actor has no organizations, they can only see themselves
+          Ash.Query.filter(query, id == ^actor_id)
+        else
+          # Filter to users who share at least one organization
+          # Use a subquery-style exists check
+          Ash.Query.filter(query,
+            id == ^actor_id or
+            exists(memberships, organization_id in ^actor_org_ids)
+          )
+        end
+      else
+        query
+      end
+    end
+  end
+
   actions do
     defaults [:read, :destroy]
 
@@ -267,21 +309,14 @@ defmodule PilatesOnPhx.Accounts.User do
     policy action_type(:read) do
       # Users can read themselves
       authorize_if actor_attribute_equals(:id, :id)
-    end
-
-    policy action_type(:read) do
-      # Users in same organization can read each other
-      authorize_if relates_to_actor_via([:organizations, :memberships])
+      # Users can read other users in their organizations
+      # This authorizes the action but filtering will limit results to shared orgs
+      authorize_if actor_present()
     end
 
     policy action_type([:update, :destroy]) do
-      # Users can manage themselves
+      # Users can only manage themselves
       authorize_if actor_attribute_equals(:id, :id)
-    end
-
-    policy action_type([:update, :destroy]) do
-      # Organization owners can manage users in their org
-      authorize_if relates_to_actor_via([:organizations, :memberships])
     end
   end
 
