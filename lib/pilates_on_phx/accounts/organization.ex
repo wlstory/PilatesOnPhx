@@ -174,6 +174,8 @@ defmodule PilatesOnPhx.Accounts.Organization do
     end
 
     policy action_type(:read) do
+      # Allow system reads (no actor) for relationship validation
+      authorize_unless actor_present()
       # Members can read their organization (filtering done in preparations)
       authorize_if actor_present()
     end

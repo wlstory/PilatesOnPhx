@@ -310,6 +310,8 @@ defmodule PilatesOnPhx.Accounts.User do
     end
 
     policy action_type(:read) do
+      # Allow system reads (no actor) for relationship validation during token creation
+      authorize_unless actor_present()
       # Users can read themselves
       authorize_if actor_attribute_equals(:id, :id)
       # Users can read other users in their organizations
