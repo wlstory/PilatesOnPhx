@@ -85,7 +85,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         User
         |> Ash.Query.filter(id == ^user.id)
         |> Ash.Query.load([:memberships, :organizations, :tokens])
-        |> Ash.read_one!(domain: Accounts)
+        |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
       assert length(loaded_user.memberships) == 1
       assert length(loaded_user.organizations) == 1
@@ -266,7 +266,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         User
         |> Ash.Query.filter(id == ^authenticated.id)
         |> Ash.Query.load([:organizations, :memberships])
-        |> Ash.read_one!(domain: Accounts)
+        |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
       # User should have access to all their organizations
       assert length(loaded_user.organizations) == 3
@@ -478,7 +478,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       device2_still_active =
         Token
         |> Ash.Query.filter(id == ^device2_token.id)
-        |> Ash.read_one!(domain: Accounts)
+        |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
       assert device2_still_active.revoked_at == nil
     end
@@ -785,7 +785,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         User
         |> Ash.Query.filter(id == ^authenticated.id)
         |> Ash.Query.load([:organizations, :memberships])
-        |> Ash.read_one!(domain: Accounts)
+        |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
       # Verify access to all organizations
       assert length(loaded_user.organizations) == 3
@@ -806,7 +806,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         User
         |> Ash.Query.filter(id == ^user.id)
         |> Ash.Query.load(:organizations)
-        |> Ash.read_one!(domain: Accounts)
+        |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
       [org1, org2] = loaded_user.organizations
 
