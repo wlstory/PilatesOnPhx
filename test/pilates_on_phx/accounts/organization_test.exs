@@ -33,11 +33,12 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
         active: true
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         Organization
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
       assert Enum.any?(changeset.errors, fn error -> error.field == :name end)
     end
@@ -49,11 +50,12 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
         active: true
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         Organization
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
       assert Enum.any?(changeset.errors, fn error -> error.field == :name end)
     end
@@ -68,11 +70,12 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
         active: true
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         Organization
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
     end
 
@@ -148,11 +151,12 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
         timezone: "Invalid/Timezone"
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         Organization
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
       assert Enum.any?(changeset.errors, fn error -> error.field == :timezone end)
     end
@@ -249,22 +253,24 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
     test "validates name during update" do
       org = create_organization()
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         org
         |> Ash.Changeset.for_update(:update, %{name: ""}, actor: bypass_actor())
         |> Ash.update(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
     end
 
     test "validates timezone during update" do
       org = create_organization()
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         org
         |> Ash.Changeset.for_update(:update, %{timezone: "Invalid/Zone"}, actor: bypass_actor())
         |> Ash.update(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
     end
   end
@@ -560,15 +566,15 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
     end
 
     test "organization data does not leak between tenants" do
-      scenario1 = create_organization_scenario(
+      scenario1 = create_organization_scenario(%{
         instructor_count: 2,
         client_count: 5
-      )
+      })
 
-      scenario2 = create_organization_scenario(
+      scenario2 = create_organization_scenario(%{
         instructor_count: 3,
         client_count: 10
-      )
+      })
 
       # Load organization 1 users
       org1_users =
@@ -700,11 +706,12 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
 
       attrs = %{name: long_name}
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         Organization
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
     end
 
@@ -737,11 +744,12 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
     test "rejects nil as settings" do
       org = create_organization()
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         org
         |> Ash.Changeset.for_update(:update, %{settings: nil}, actor: bypass_actor())
         |> Ash.update(domain: Accounts)
 
+      changeset = error.changeset
       assert changeset.valid? == false
     end
 
@@ -814,7 +822,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
     test "can delete organization with no members" do
       org = create_organization()
 
-      assert {:ok, _} = Ash.destroy(org, domain: Accounts, actor: bypass_actor())
+      assert :ok = Ash.destroy(org, domain: Accounts, actor: bypass_actor())
 
       # Verify organization is gone
       assert {:error, %Ash.Error.Query.NotFound{}} =
@@ -837,7 +845,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       assert length(membership_ids) >= 2
 
       # Delete organization
-      assert {:ok, _} = Ash.destroy(org, domain: Accounts, actor: bypass_actor())
+      assert :ok = Ash.destroy(org, domain: Accounts, actor: bypass_actor())
 
       # Verify memberships are deleted
       remaining_memberships =

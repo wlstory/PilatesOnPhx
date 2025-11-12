@@ -322,9 +322,9 @@ defmodule PilatesOnPhx.AccountsFixtures do
     |> Ash.Query.filter(user_id == ^owner.id and organization_id == ^organization.id)
     |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
-    OrganizationMembership
-    |> Ash.Changeset.for_update(:update, membership, %{role: :owner})
-    |> Ash.update!(domain: Accounts, actor: bypass_actor())
+    membership
+    |> Ash.Changeset.for_update(:update, %{role: :owner}, actor: bypass_actor())
+    |> Ash.update!(domain: Accounts)
 
     # Create instructors
     instructors = Enum.map(1..instructor_count, fn i ->
