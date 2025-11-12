@@ -79,6 +79,42 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
     end
   end
 
+  preparations do
+    # Filter memberships to only those in organizations the actor belongs to
+    prepare fn query, context ->
+      require Ash.Query
+
+      actor = Map.get(context, :actor)
+
+      if actor && !Map.get(actor, :bypass_strict_access, false) do
+        # Get actor's organization IDs
+        actor_org_ids =
+          case Ash.load(actor, :memberships, domain: PilatesOnPhx.Accounts) do
+            {:ok, loaded_actor} ->
+              Enum.map(loaded_actor.memberships, & &1.organization_id)
+
+            {:error, _} ->
+              # If load fails, try to use already loaded memberships
+              case Map.get(actor, :memberships) do
+                %Ash.NotLoaded{} -> []
+                memberships when is_list(memberships) -> Enum.map(memberships, & &1.organization_id)
+                _ -> []
+              end
+          end
+
+        # Filter to memberships in actor's organizations
+        if Enum.empty?(actor_org_ids) do
+          # No organizations - return empty result
+          Ash.Query.filter(query, false)
+        else
+          Ash.Query.filter(query, organization_id in ^actor_org_ids)
+        end
+      else
+        query
+      end
+    end
+  end
+
   policies do
     # Bypass authorization in test environment for fixture creation
     bypass actor_attribute_equals(:bypass_strict_access, true) do
@@ -86,12 +122,8 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
     end
 
     policy action_type(:read) do
-      # Users can read their own membership
-      authorize_if actor_attribute_equals(:id, :user_id)
-      # Users can read memberships in organizations they belong to
-      authorize_if expr(
-                     organization_id in actor_path([:memberships, :organization_id])
-                   )
+      # Allow reading if actor is present (preparation will filter to shared orgs)
+      authorize_if actor_present()
     end
 
     policy action_type(:create) do

@@ -832,12 +832,12 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       org1_loaded =
         Organization
         |> Ash.Query.filter(id == ^org1.id)
-        |> Accounts.read_one!(actor: user)
+        |> Ash.read_one!(domain: Accounts, actor: user)
 
       org2_loaded =
         Organization
         |> Ash.Query.filter(id == ^org2.id)
-        |> Accounts.read_one!(actor: user)
+        |> Ash.read_one!(domain: Accounts, actor: user)
 
       assert org1_loaded.id == org1.id
       assert org2_loaded.id == org2.id
