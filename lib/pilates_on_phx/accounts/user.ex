@@ -184,7 +184,8 @@ defmodule PilatesOnPhx.Accounts.User do
     end
 
     update :update do
-      accept [:name, :role, :confirmed_at]
+      accept [:name, :role, :email, :confirmed_at]
+      require_atomic? false
     end
 
     update :confirm_email do
