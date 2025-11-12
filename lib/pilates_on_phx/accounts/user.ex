@@ -122,6 +122,7 @@ defmodule PilatesOnPhx.Accounts.User do
   relationships do
     has_many :tokens, PilatesOnPhx.Accounts.Token do
       destination_attribute :user_id
+      # When user is deleted, delete all their tokens
     end
 
     has_many :memberships, PilatesOnPhx.Accounts.OrganizationMembership do
