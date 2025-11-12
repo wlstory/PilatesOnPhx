@@ -279,9 +279,9 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       assert length(active_tokens) >= 2
 
-      token_ids = Enum.map(active_tokens, & &1.id)
-      assert active1.id in token_ids
-      assert active2.id in token_ids
+      token_ids = Enum.map(active_tokens, & &1.jti)
+      assert active1.jti in token_ids
+      assert active2.jti in token_ids
     end
 
     test "can query expired tokens" do
@@ -303,9 +303,9 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       assert length(expired_tokens) >= 2
 
-      token_ids = Enum.map(expired_tokens, & &1.id)
-      assert expired1.id in token_ids
-      assert expired2.id in token_ids
+      token_ids = Enum.map(expired_tokens, & &1.jti)
+      assert expired1.jti in token_ids
+      assert expired2.jti in token_ids
     end
 
     test "bearer tokens typically expire in 1 hour" do
@@ -487,10 +487,10 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
         |> Ash.Query.load(:tokens)
         |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
 
-      token_ids = Enum.map(loaded_user.tokens, & &1.id)
-      assert token1.id in token_ids
-      assert token2.id in token_ids
-      assert token3.id in token_ids
+      token_ids = Enum.map(loaded_user.tokens, & &1.jti)
+      assert token1.jti in token_ids
+      assert token2.jti in token_ids
+      assert token3.jti in token_ids
     end
 
     test "deleting user cascades to tokens" do
@@ -505,7 +505,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       # Tokens should be deleted
       remaining_tokens =
         Token
-        |> Ash.Query.filter(id in ^[token1.id, token2.id])
+        |> Ash.Query.filter(jti in [token1.jti, token2.jti])
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
       assert remaining_tokens == []
@@ -716,10 +716,10 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
         |> Ash.Query.filter(user_id == ^user1.id)
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
-      user1_token_ids = Enum.map(user1_tokens, & &1.id)
+      user1_token_ids = Enum.map(user1_tokens, & &1.jti)
 
-      assert token1.id in user1_token_ids
-      refute token2.id in user1_token_ids
+      assert token1.jti in user1_token_ids
+      refute token2.jti in user1_token_ids
     end
   end
 
@@ -816,7 +816,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       # Active token should remain
       assert {:ok, _} =
                Token
-               |> Ash.Query.filter(id == ^active.id)
+               |> Ash.Query.filter(jti == ^active.jti)
                |> Ash.read_one(domain: Accounts, actor: bypass_actor())
     end
 

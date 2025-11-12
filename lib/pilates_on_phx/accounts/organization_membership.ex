@@ -86,7 +86,12 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
     end
 
     policy action_type(:read) do
+      # Users can read their own membership
       authorize_if actor_attribute_equals(:id, :user_id)
+      # Users can read memberships in organizations they belong to
+      authorize_if expr(
+                     organization_id in actor_path([:memberships, :organization_id])
+                   )
     end
 
     policy action_type(:create) do

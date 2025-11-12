@@ -373,7 +373,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         )
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
-      assert expired_refresh.id not in Enum.map(valid_refresh_tokens, & &1.id)
+      assert expired_refresh.jti not in Enum.map(valid_refresh_tokens, & &1.jti)
     end
 
     test "revoked refresh token cannot be used" do
@@ -409,7 +409,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         )
         |> Ash.read!(domain: Accounts, actor: bypass_actor())
 
-      assert revoked_refresh.id not in Enum.map(active_refresh_tokens, & &1.id)
+      assert revoked_refresh.jti not in Enum.map(active_refresh_tokens, & &1.jti)
     end
   end
 
@@ -628,7 +628,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
       active_reset_tokens =
         Token
         |> Ash.Query.filter(
-          id == ^reset_token.id and
+          jti == ^reset_token.jti and
             token_type == :password_reset and
             is_nil(revoked_at)
         )
@@ -743,7 +743,7 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
         |> Ash.create(domain: Accounts)
 
       # Both tokens should exist
-      assert token1.id != token2.id
+      assert token1.jti != token2.jti
       assert token2.revoked_at == nil
     end
   end
