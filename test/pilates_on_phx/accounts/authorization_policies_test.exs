@@ -34,8 +34,8 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       assert loaded.id == user_org1.id
 
-      # User from org1 cannot read users in org2
-      assert {:error, %Ash.Error.Forbidden{}} =
+      # User from org1 cannot read users in org2 (filtered out, returns nil)
+      assert {:ok, nil} =
         User
         |> Ash.Query.filter(id == ^user_org2.id)
         |> Ash.read_one(domain: Accounts, actor: user_org1)
@@ -84,8 +84,8 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       assert loaded_org1.id == org1.id
 
-      # User1 cannot access other organization
-      assert {:error, %Ash.Error.Forbidden{}} =
+      # User1 cannot access other organization (filtered out)
+      assert {:ok, nil} =
         Organization
         |> Ash.Query.filter(id == ^org2.id)
         |> Ash.read_one(domain: Accounts, actor: user1)
@@ -98,8 +98,8 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       assert loaded_org2.id == org2.id
 
-      # User2 cannot access other organization
-      assert {:error, %Ash.Error.Forbidden{}} =
+      # User2 cannot access other organization (filtered out)
+      assert {:ok, nil} =
         Organization
         |> Ash.Query.filter(id == ^org1.id)
         |> Ash.read_one(domain: Accounts, actor: user2)
@@ -143,8 +143,8 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
 
       assert loaded_token.jti == token1.jti
 
-      # User1 cannot access user2's token
-      assert {:error, %Ash.Error.Forbidden{}} =
+      # User1 cannot access user2's token (filtered out)
+      assert {:ok, nil} =
         Token
         |> Ash.Query.filter(jti == ^token2.jti)
         |> Ash.read_one(domain: Accounts, actor: user1)

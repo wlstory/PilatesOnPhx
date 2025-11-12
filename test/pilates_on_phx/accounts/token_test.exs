@@ -13,7 +13,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       attrs = %{
         user_id: user.id,
-        token_type: "bearer",
+        token_type: :bearer,
         expires_at: DateTime.add(DateTime.utc_now(), 3600, :second),
         extra_data: %{}
       }
@@ -31,7 +31,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
     test "requires user_id" do
       attrs = %{
-        token_type: "bearer",
+        token_type: :bearer,
         expires_at: DateTime.add(DateTime.utc_now(), 3600, :second)
       }
 
@@ -83,7 +83,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       attrs = %{
         user_id: user.id,
-        token_type: "bearer"
+        token_type: :bearer
       }
 
       assert {:ok, token} =
@@ -101,7 +101,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       attrs = %{
         user_id: user.id,
-        token_type: "bearer",
+        token_type: :bearer,
         expires_at: DateTime.add(DateTime.utc_now(), 3600, :second)
       }
 
@@ -118,7 +118,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       attrs = %{
         user_id: user.id,
-        token_type: "bearer",
+        token_type: :bearer,
         expires_at: DateTime.add(DateTime.utc_now(), 3600, :second),
         extra_data: %{
           device_id: "mobile-123",
@@ -142,7 +142,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       attrs = %{
         user_id: non_existent_user_id,
-        token_type: "bearer",
+        token_type: :bearer,
         expires_at: DateTime.add(DateTime.utc_now(), 3600, :second)
       }
 
@@ -176,7 +176,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
   describe "token types" do
     test "supports bearer token type" do
       user = create_user()
-      token = create_token(user: user, token_type: "bearer")
+      token = create_token(user: user, token_type: :bearer)
 
       assert token.token_type == :bearer
     end
@@ -186,7 +186,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       attrs = %{
         user_id: user.id,
-        token_type: "refresh",
+        token_type: :refresh,
         expires_at: DateTime.add(DateTime.utc_now(), 30 * 24 * 3600, :second)  # 30 days
       }
 
@@ -203,7 +203,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       attrs = %{
         user_id: user.id,
-        token_type: "password_reset",
+        token_type: :password_reset,
         expires_at: DateTime.add(DateTime.utc_now(), 3600, :second)  # 1 hour
       }
 
@@ -220,7 +220,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
 
       attrs = %{
         user_id: user.id,
-        token_type: "email_confirmation",
+        token_type: :email_confirmation,
         expires_at: DateTime.add(DateTime.utc_now(), 24 * 3600, :second)  # 24 hours
       }
 
@@ -306,7 +306,7 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       user = create_user()
 
       before_create = DateTime.utc_now()
-      token = create_token(user: user, token_type: "bearer")
+      token = create_token(user: user, token_type: :bearer)
       after_create = DateTime.add(DateTime.utc_now(), 3600, :second)
 
       # Token expiration should be around 1 hour from now
@@ -320,8 +320,8 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
       bearer_expires = DateTime.add(DateTime.utc_now(), 3600, :second)  # 1 hour
       refresh_expires = DateTime.add(DateTime.utc_now(), 30 * 24 * 3600, :second)  # 30 days
 
-      bearer_token = create_token(user: user, token_type: "bearer", expires_at: bearer_expires)
-      refresh_token = create_token(user: user, token_type: "refresh", expires_at: refresh_expires)
+      bearer_token = create_token(user: user, token_type: :bearer, expires_at: bearer_expires)
+      refresh_token = create_token(user: user, token_type: :refresh, expires_at: refresh_expires)
 
       # Refresh token should expire much later
       assert DateTime.compare(refresh_token.expires_at, bearer_token.expires_at) == :gt
@@ -519,12 +519,12 @@ defmodule PilatesOnPhx.Accounts.TokenTest do
     test "can filter tokens by type" do
       user = create_user()
 
-      bearer1 = create_token(user: user, token_type: "bearer")
-      bearer2 = create_token(user: user, token_type: "bearer")
+      bearer1 = create_token(user: user, token_type: :bearer)
+      bearer2 = create_token(user: user, token_type: :bearer)
 
       refresh_attrs = %{
         user_id: user.id,
-        token_type: "refresh",
+        token_type: :refresh,
         expires_at: DateTime.add(DateTime.utc_now(), 30 * 24 * 3600, :second)
       }
 

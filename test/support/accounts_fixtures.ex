@@ -232,24 +232,24 @@ defmodule PilatesOnPhx.AccountsFixtures do
 
   ## Options
     * `:user` - User to create token for (required)
-    * `:token_type` - Token type (default: "bearer")
+    * `:token_type` - Token type (default: :bearer)
     * `:expires_at` - Token expiration (default: 1 hour from now)
     * `:extra_data` - Additional token metadata (default: %{})
 
   ## Examples
 
       iex> create_token(user: user)
-      %Token{user_id: user.id, token_type: "bearer"}
+      %Token{user_id: user.id, token_type: :bearer}
 
-      iex> create_token(user: user, token_type: "refresh")
-      %Token{token_type: "refresh"}
+      iex> create_token(user: user, token_type: :refresh)
+      %Token{token_type: :refresh}
   """
   def create_token(attrs) do
     user = Keyword.fetch!(attrs, :user)
 
     token_attrs = %{
       user_id: user.id,
-      token_type: Keyword.get(attrs, :token_type, "bearer"),
+      token_type: Keyword.get(attrs, :token_type, :bearer),
       expires_at: Keyword.get(attrs, :expires_at, DateTime.add(DateTime.utc_now(), 3600, :second)),
       extra_data: Keyword.get(attrs, :extra_data, %{})
     }

@@ -83,12 +83,14 @@ defmodule PilatesOnPhx.Accounts.Token do
 
       change manage_relationship(:user_id, :user, type: :append_and_remove)
 
-      # Set defaults for AshAuthentication fields if not provided
+      # Set defaults for AshAuthentication fields and expiration if not provided
       change fn changeset, _ ->
         changeset
         |> Ash.Changeset.change_new_attribute(:jti, Ash.UUID.generate())
         |> Ash.Changeset.change_new_attribute(:purpose, "user")
         |> Ash.Changeset.change_new_attribute(:subject, to_string(changeset.arguments[:user_id] || ""))
+        |> Ash.Changeset.change_new_attribute(:expires_at, DateTime.add(DateTime.utc_now(), 3600, :second))
+        |> Ash.Changeset.change_new_attribute(:extra_data, %{})
       end
     end
 

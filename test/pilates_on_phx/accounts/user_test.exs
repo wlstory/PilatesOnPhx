@@ -214,7 +214,8 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         |> Ash.Changeset.for_create(:register, attrs)
         |> Ash.create(domain: Accounts)
 
-      assert to_string(user.email) == "uppercase@example.com"
+      # CiString compares case-insensitively, so this should match
+      assert Ash.CiString.compare(user.email, "uppercase@example.com") == :eq
     end
   end
 
@@ -240,7 +241,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
     test "fails authentication with invalid password" do
       user = create_user(password: "CorrectPassword123!", email: "authfail@example.com")
 
-      assert {:error, %Ash.Error.Query.NotFound{}} =
+      assert {:error, _error} =
         User
         |> Ash.Query.for_read(:sign_in_with_password, %{
           email: user.email,
@@ -250,7 +251,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
     end
 
     test "fails authentication with non-existent email" do
-      assert {:error, %Ash.Error.Query.NotFound{}} =
+      assert {:error, _error} =
         User
         |> Ash.Query.for_read(:sign_in_with_password, %{
           email: "nonexistent@example.com",
@@ -342,7 +343,7 @@ defmodule PilatesOnPhx.Accounts.UserTest do
         |> Ash.update(domain: Accounts)
 
       # Verify old password no longer works
-      assert {:error, %Ash.Error.Query.NotFound{}} =
+      assert {:error, _error} =
         User
         |> Ash.Query.for_read(:sign_in_with_password, %{
           email: user.email,

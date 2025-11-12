@@ -88,10 +88,33 @@ defmodule PilatesOnPhx.Accounts.Organization do
           :ok
 
         timezone ->
-          # Basic validation - check if it follows timezone format
-          # More comprehensive validation would require tzdata library
-          if String.match?(timezone, ~r/^[A-Z][A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?$/) ||
-             timezone in ["UTC", "GMT"] do
+          # Validate against a list of common IANA timezones
+          # This is a reasonable subset for production use
+          valid_timezones = [
+            "UTC", "GMT",
+            # Americas
+            "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
+            "America/Phoenix", "America/Anchorage", "America/Honolulu",
+            "America/Toronto", "America/Vancouver", "America/Mexico_City",
+            "America/Sao_Paulo", "America/Buenos_Aires",
+            # Europe
+            "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Rome",
+            "Europe/Madrid", "Europe/Amsterdam", "Europe/Brussels", "Europe/Vienna",
+            "Europe/Stockholm", "Europe/Copenhagen", "Europe/Dublin", "Europe/Lisbon",
+            "Europe/Athens", "Europe/Prague", "Europe/Warsaw", "Europe/Moscow",
+            # Asia
+            "Asia/Tokyo", "Asia/Seoul", "Asia/Shanghai", "Asia/Hong_Kong",
+            "Asia/Singapore", "Asia/Bangkok", "Asia/Dubai", "Asia/Kolkata",
+            "Asia/Jerusalem", "Asia/Tehran",
+            # Pacific
+            "Pacific/Auckland", "Pacific/Sydney", "Pacific/Melbourne",
+            "Pacific/Fiji", "Pacific/Guam",
+            # Australia
+            "Australia/Sydney", "Australia/Melbourne", "Australia/Brisbane",
+            "Australia/Perth", "Australia/Adelaide"
+          ]
+
+          if timezone in valid_timezones do
             :ok
           else
             {:error,

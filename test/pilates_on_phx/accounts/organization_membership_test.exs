@@ -38,13 +38,12 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
         role: :member
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         OrganizationMembership
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
 
-      assert changeset.valid? == false
-      assert Enum.any?(changeset.errors, fn error -> error.field == :user_id end)
+      assert Enum.any?(error.errors, fn err -> err.field == :user_id end)
     end
 
     test "requires organization_id" do
@@ -55,13 +54,12 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
         role: :member
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         OrganizationMembership
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
 
-      assert changeset.valid? == false
-      assert Enum.any?(changeset.errors, fn error -> error.field == :organization_id end)
+      assert Enum.any?(error.errors, fn err -> err.field == :organization_id end)
     end
 
     test "sets default role to :member if not specified" do
@@ -123,14 +121,13 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
         |> Ash.create(domain: Accounts)
 
       # Attempt duplicate membership
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{} = error} =
         OrganizationMembership
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
 
-      assert changeset.valid? == false
-      assert Enum.any?(changeset.errors, fn error ->
-        error.message =~ "unique"
+      assert Enum.any?(error.errors, fn err ->
+        err.message =~ "unique" or err.message =~ "already been taken"
       end)
     end
 
@@ -185,12 +182,10 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
         role: :member
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{}} =
         OrganizationMembership
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
-
-      assert changeset.valid? == false
     end
 
     test "validates organization exists" do
@@ -203,12 +198,10 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
         role: :member
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{}} =
         OrganizationMembership
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
-
-      assert changeset.valid? == false
     end
   end
 
@@ -253,12 +246,10 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
         role: :invalid_role
       }
 
-      assert {:error, changeset} =
+      assert {:error, %Ash.Error.Invalid{}} =
         OrganizationMembership
         |> Ash.Changeset.for_create(:create, attrs)
         |> Ash.create(domain: Accounts)
-
-      assert changeset.valid? == false
     end
 
     test "user can have different roles in different organizations" do
