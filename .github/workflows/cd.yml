@@ -1,3 +1,4 @@
+# Continuous Deployment to Fly.io Production
 # See https://fly.io/docs/app-guides/continuous-deployment-with-github-actions/
 
 name: CD
@@ -18,7 +19,15 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 1
+
       - uses: superfly/flyctl-actions/setup-flyctl@master
+
       - run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          # Add your production environment variables here
+          # These will be set as secrets on the Fly app during deployment
+          # Example:
+          # SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
+          # DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # PHX_HOST: pilatesonphx.fly.dev

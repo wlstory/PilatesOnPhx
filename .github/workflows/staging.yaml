@@ -1,0 +1,316 @@
+name: Staging
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+    paths:
+      - '**'
+      - '!/docs/**'
+      - '!.github/dependabot.yml'
+      - '!.formatter.exs'
+      - '!.gitattributes'
+      - '!.tool-versions'
+      - '!README.md'
+      - '!mix.lock'
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  FLY_REGION: dfw
+  FLY_ORG: pilatesonphx  # Update this to your Fly.io organization
+  FLY_APP_NAME: pr-${{ github.event.number }}
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+  deployments: write
+
+jobs:
+  Preview:
+    runs-on: ubuntu-latest
+    # Skip preview deployments for Dependabot PRs
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    # Only run one deployment at a time per PR.
+    concurrency:
+      group: pr-${{ github.event.number }}
+      cancel-in-progress: true
+
+    # Create a GitHub deployment environment per staging app so it shows up
+    # in the pull request UI.
+    environment:
+      name: pr-${{ github.event.number }}
+      url: https://pr-${{ github.event.number }}.fly.dev
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Install Fly CLI
+        run: |
+          curl -L https://fly.io/install.sh | sh
+          echo "/home/runner/.fly/bin" >> $GITHUB_PATH
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Ensure database exists and is online
+        run: |
+          #!/bin/bash
+          set -e
+          set -o pipefail
+
+          DB_NAME="pr-${{ github.event.number }}-db"
+          FLY_API_TOKEN="${{ secrets.FLY_API_TOKEN }}"
+          FLY_REGION="${{ env.FLY_REGION }}"
+          FLY_ORG="${{ env.FLY_ORG }}"
+
+          echo "Checking if database $DB_NAME exists in organization $FLY_ORG..."
+
+          # Check if the database exists with robust error handling
+          # Capture both stdout and stderr to detect actual failures
+          DB_LIST_OUTPUT=$(flyctl postgres list --json 2>&1)
+          DB_LIST_EXIT_CODE=$?
+
+          # Extract only the JSON portion (Fly.io CLI includes warning text before JSON)
+          # JSON starts with '[' and ends with ']'
+          DB_LIST_JSON=$(echo "$DB_LIST_OUTPUT" | sed -n '/^\[/,/^\]/p')
+
+          # Validate that we got valid JSON output
+          if [ $DB_LIST_EXIT_CODE -ne 0 ] || [ -z "$DB_LIST_JSON" ] || ! echo "$DB_LIST_JSON" | jq -e . >/dev/null 2>&1; then
+            echo "Warning: Failed to list databases (exit code: $DB_LIST_EXIT_CODE)"
+            echo "Raw output: $DB_LIST_OUTPUT"
+            echo "Extracted JSON: $DB_LIST_JSON"
+            echo "Using empty database list and will create new database if needed"
+            DB_LIST_JSON="[]"
+          fi
+
+          # Now safely check if our database exists in the list
+          DB_EXISTS=$(echo "$DB_LIST_JSON" | jq -r ".[] | select(.Name == \"$DB_NAME\") | .Name")
+
+          # Function to check if PostgreSQL is healthy and has a leader
+          check_postgres_health() {
+            local app_name=$1
+            local max_attempts=30
+            local attempt=0
+
+            echo "Checking PostgreSQL health for $app_name..."
+
+            while [ $attempt -lt $max_attempts ]; do
+              attempt=$((attempt + 1))
+              echo "Health check attempt $attempt/$max_attempts..."
+
+              # Check machine state - tolerate failures during early boot
+              MACHINE_STATE=$(fly status --app "$app_name" --json 2>/dev/null | jq -r '.Machines[] | .state' | head -1 || true)
+
+              # Treat empty output as not ready
+              if [ -z "$MACHINE_STATE" ] || [ "$MACHINE_STATE" != "started" ]; then
+                echo "  Machine state: ${MACHINE_STATE:-unavailable} (not ready)"
+                sleep 5
+                continue
+              fi
+
+              # Check PostgreSQL health via checks - tolerate failures during early boot
+              PG_CHECK=$(fly status --app "$app_name" --json 2>/dev/null | jq -r '.Machines[] | .checks[] | select(.name == "pg") | .status' | head -1 || true)
+              ROLE_CHECK=$(fly status --app "$app_name" --json 2>/dev/null | jq -r '.Machines[] | .checks[] | select(.name == "role") | .status' | head -1 || true)
+
+              echo "  Machine: $MACHINE_STATE | PG: ${PG_CHECK:-unknown} | Role: ${ROLE_CHECK:-unknown}"
+
+              if [ "$PG_CHECK" == "passing" ] && [ "$ROLE_CHECK" == "passing" ]; then
+                echo "PostgreSQL is healthy with active leader"
+                return 0
+              fi
+
+              # If checks exist but are not passing, keep waiting
+              if [ -n "$PG_CHECK" ] || [ -n "$ROLE_CHECK" ]; then
+                echo "  Waiting for health checks to pass..."
+                sleep 5
+              else
+                echo "  Health checks not yet available, waiting..."
+                sleep 5
+              fi
+            done
+
+            echo "PostgreSQL failed to become healthy after $max_attempts attempts"
+            return 1
+          }
+
+          if [ "$DB_EXISTS" == "$DB_NAME" ]; then
+            echo "Database app $DB_NAME already exists. Checking its health..."
+
+            # Check if machine is running - tolerate failures during early boot
+            DB_STATUS=$(fly status --app "$DB_NAME" --json 2>/dev/null | jq -r '.Machines[] | .state' | head -1 || true)
+
+            # Treat empty status as not started
+            if [ -z "$DB_STATUS" ] || [ "$DB_STATUS" != "started" ]; then
+              echo "Database machine is stopped (status: ${DB_STATUS:-unavailable}). Starting..."
+              MACHINE_ID=$(fly status --app "$DB_NAME" --json 2>/dev/null | jq -r '.Machines[0].id // empty' || true)
+              if [ -n "$MACHINE_ID" ]; then
+                fly machine start "$MACHINE_ID" --app "$DB_NAME" || {
+                  echo "Failed to start database machine, trying restart..."
+                  fly apps restart "$DB_NAME" || { echo "Failed to restart database app $DB_NAME"; exit 1; }
+                }
+              else
+                echo "Could not retrieve machine ID, trying app restart..."
+                fly apps restart "$DB_NAME" || { echo "Failed to restart database app $DB_NAME"; exit 1; }
+              fi
+            fi
+
+            # Wait for PostgreSQL to be healthy
+            if ! check_postgres_health "$DB_NAME"; then
+              echo "PostgreSQL is not healthy. Attempting full restart..."
+              fly apps restart "$DB_NAME" || { echo "Failed to restart database app $DB_NAME"; exit 1; }
+
+              # Wait again after restart
+              if ! check_postgres_health "$DB_NAME"; then
+                echo "ERROR: PostgreSQL failed to become healthy after restart"
+                echo "This likely indicates a corrupted database. Recommend destroying and recreating:"
+                echo "  flyctl apps destroy $DB_NAME -y"
+                exit 1
+              fi
+            fi
+
+            echo "Database $DB_NAME is healthy and ready"
+          else
+            echo "Database app $DB_NAME does not exist. Creating a new database..."
+            # Use shared-cpu-2x (1GB RAM) to avoid connection pool exhaustion
+            # 256MB (shared-cpu-1x) is insufficient for Phoenix + Ash + LiveView + concurrent connections
+            fly postgres create --name "$DB_NAME" --org "$FLY_ORG" --region "$FLY_REGION" --vm-size shared-cpu-2x --volume-size 1 --initial-cluster-size 1 || { echo "Failed to create database $DB_NAME"; exit 1; }
+
+            # Wait for new database to be fully ready
+            echo "Waiting for newly created database to be ready..."
+            if ! check_postgres_health "$DB_NAME"; then
+              echo "ERROR: Newly created database failed to become healthy"
+              exit 1
+            fi
+
+            echo "Database $DB_NAME created and ready"
+          fi
+
+      - name: Check if App Exists
+        id: check_app
+        run: |
+          if flyctl apps list --json | jq -e ".[] | select(.Name == \"${{ env.FLY_APP_NAME }}\")" > /dev/null 2>&1; then
+            echo "hasApp=true" >> $GITHUB_OUTPUT
+          else
+            echo "hasApp=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create fly app
+        if: steps.check_app.outputs.hasApp == 'false'
+        uses: superfly/flyctl-actions@1.5
+        with:
+          args:
+            'launch --no-deploy --copy-config --dockerfile Dockerfile --name ${{
+            env.FLY_APP_NAME }} --region ${{ env.FLY_REGION }} --org ${{
+            env.FLY_ORG }}'
+
+      - name: Get database credentials and create database
+        id: get_db_creds
+        run: |
+          #!/bin/bash
+          set -e
+
+          DB_NAME="${{ env.FLY_APP_NAME }}-db"
+          DB_DATABASE="pr_${{ github.event.number }}_db"
+
+          echo "Getting database password from ${DB_NAME}..."
+
+          # Get the operator password from the database app's secrets
+          # The password is stored when the cluster is created
+          PASSWORD=$(flyctl ssh console --app "${DB_NAME}" -C "printenv OPERATOR_PASSWORD" 2>/dev/null | tr -d '\r\n')
+
+          if [ -z "$PASSWORD" ]; then
+            echo "Trying alternative method with postgres user password..."
+            PASSWORD=$(flyctl ssh console --app "${DB_NAME}" -C "printenv POSTGRES_PASSWORD" 2>/dev/null | tr -d '\r\n')
+          fi
+
+          if [ -z "$PASSWORD" ]; then
+            echo "ERROR: Could not retrieve database password from ${DB_NAME}"
+            exit 1
+          fi
+
+          # Mask password in GitHub Actions logs to prevent exposure
+          echo "::add-mask::$PASSWORD"
+
+          # URL-encode the password to handle special URI characters
+          # This prevents characters like @, :, /, ?, # from breaking the connection string
+          echo "URL-encoding password for safe inclusion in DATABASE_URL..."
+          ENCODED_PASSWORD=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''${PASSWORD}''', safe=''))")
+
+          if [ -z "$ENCODED_PASSWORD" ]; then
+            echo "ERROR: Failed to URL-encode password"
+            exit 1
+          fi
+
+          # Mask encoded password in GitHub Actions logs
+          echo "::add-mask::$ENCODED_PASSWORD"
+
+          echo "Creating database ${DB_DATABASE} if it doesn't exist..."
+
+          # Create the database if it doesn't already exist
+          # Use PGPASSWORD environment variable to supply password (use raw password, not encoded)
+          # Substitute PASSWORD in outer shell before passing to SSH
+          flyctl ssh console --app "${DB_NAME}" -C "/bin/sh -c 'PGPASSWORD=\"${PASSWORD}\" psql -h localhost -U postgres -c \"CREATE DATABASE ${DB_DATABASE};\" || echo Database may already exist'" || true
+
+          # Construct the DATABASE_URL using the URL-encoded password
+          # Format: postgres://USER:PASSWORD@HOST:PORT/DATABASE
+          # Use flycast for internal networking
+          DB_USER="postgres"
+          DB_HOST="${DB_NAME}.flycast"
+          DB_PORT="5432"
+
+          DB_URL="postgres://${DB_USER}:${ENCODED_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_DATABASE}?sslmode=disable"
+
+          # Mask DATABASE_URL in GitHub Actions logs to prevent password exposure
+          echo "::add-mask::$DB_URL"
+
+          # Use printf with %s to safely export to GITHUB_OUTPUT, avoiding issues with special characters
+          printf "db_url=%s\n" "$DB_URL" >> $GITHUB_OUTPUT
+          echo "Database ${DB_DATABASE} configured successfully"
+
+      - name: Generate Secrets
+        id: generate_secrets
+        run: |
+          echo "SECRET_KEY=$(openssl rand -base64 64 | tr -d '\n' | cut -c1-64)" >> $GITHUB_OUTPUT
+
+      - name: Deploy
+        id: deploy
+        uses: superfly/fly-pr-review-apps@1.5.0
+        with:
+          name: ${{ env.FLY_APP_NAME }}
+          secrets: |
+            DATABASE_URL=${{ steps.get_db_creds.outputs.db_url }}
+            SECRET_KEY_BASE=${{ steps.generate_secrets.outputs.SECRET_KEY }}
+            TOKEN_SIGNING_SECRET=${{ steps.generate_secrets.outputs.SECRET_KEY }}
+            PHX_HOST=${{ env.FLY_APP_NAME }}.fly.dev
+            # Add staging-specific environment variables here
+            # Example:
+            # AUTH0_DOMAIN=${{ secrets.STAGING_AUTH0_DOMAIN }}
+            # AUTH0_CLIENT_ID=${{ secrets.STAGING_AUTH0_CLIENT_ID }}
+            # AUTH0_CLIENT_SECRET=${{ secrets.STAGING_AUTH0_CLIENT_SECRET }}
+            # AUTH0_REDIRECT_URI=https://${{ env.FLY_APP_NAME }}.fly.dev/auth
+            POOL_SIZE=5
+
+      - name: Destroy Database
+        if: ${{ github.event.action == 'closed' }}
+        uses: superfly/flyctl-actions@1.5
+        with:
+          args: 'apps destroy ${{ env.FLY_APP_NAME }}-db -y || true'
+
+      # Points to a recent commit instead of `main` to avoid supply chain attacks. (The latest tag is very old.)
+      - name: Get GitHub App token
+        uses: navikt/github-app-token-generator@793caf0d755fb4d6e88150825f680f188535cb48
+        id: get-token
+        if: ${{ github.event.action == 'closed' }}
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
+      - name: Delete deployment environment
+        uses: strumwolf/delete-deployment-environment@v3
+        if: ${{ github.event.action == 'closed' }}
+        with:
+          # Use a JWT created with your GitHub App's private key
+          token: ${{ steps.get-token.outputs.token }}
+          environment: ${{ env.FLY_APP_NAME }}

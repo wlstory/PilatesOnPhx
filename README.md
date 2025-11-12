@@ -206,15 +206,66 @@ Run tests with coverage report:
 mix test --cover
 ```
 
+## CI/CD Pipeline
+
+This project includes a comprehensive CI/CD pipeline using GitHub Actions:
+
+### Continuous Integration (CI)
+
+The CI workflow runs on every push and pull request to `main`:
+
+- **Build**: Compiles code with warnings as errors
+- **Code Quality**: Runs Credo, Dialyzer, and format checks
+- **Security**: Executes Sobelow security analysis and dependency audits
+- **Tests**: Runs full test suite with coverage reporting
+
+### Continuous Deployment (CD)
+
+- **Production**: Automatic deployment to Fly.io when changes are pushed to `main`
+- **Staging**: PR preview deployments with isolated databases for testing
+
+### Setting Up CI/CD
+
+1. **Configure GitHub Secrets**:
+   ```bash
+   # Get your Fly.io API token
+   flyctl auth token
+
+   # Set it as a GitHub secret
+   gh secret set FLY_API_TOKEN
+   ```
+
+2. **Review Configuration**:
+   - See [.github/SECRETS.md](.github/SECRETS.md) for all required secrets
+   - Update `FLY_ORG` in staging workflow to match your organization
+
+3. **Monitor Workflows**:
+   - CI status appears on PRs automatically
+   - View workflow runs in the Actions tab
+   - Staging URLs appear as deployment environments on PRs
+
 ## Deployment
 
 Ready to deploy? This application is configured for deployment on:
 
-- **Fly.io** - Primary deployment platform
+- **Fly.io** - Primary deployment platform with automatic CD
 - **Heroku** - Alternative deployment option
 - **Docker** - Containerized deployment
 
-See Phoenix [deployment guides](https://hexdocs.pm/phoenix/deployment.html) for details.
+### Production Deployment
+
+Production deployments happen automatically via GitHub Actions when changes are pushed to `main`.
+
+Manual deployment:
+```bash
+fly deploy
+```
+
+### Staging Deployment
+
+Pull requests automatically create staging environments with isolated databases. The staging URL will be posted as a comment on the PR.
+
+See Phoenix [deployment guides](https://hexdocs.pm/phoenix/deployment.html) for additional deployment options.
 
 ## Contributing
 

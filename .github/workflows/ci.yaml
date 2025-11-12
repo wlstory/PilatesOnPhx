@@ -1,0 +1,204 @@
+name: CI
+
+# Define workflow that runs when changes are pushed to the
+# `main` branch or pushed to a PR branch that targets the `main`
+# branch. Change the branch name if your project uses a
+# different name for the main branch like "master" or "production".
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+
+# Sets the ENV `MIX_ENV` to `test` for running tests
+env:
+  MIX_ENV: test
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      # Step: Setup Elixir + Erlang image as the base.
+      - name: Setup Elixir Env
+        uses: ./.github/actions/setup-elixir-env
+        with:
+          should-download: 'false'
+
+      # Step: Download project dependencies. If unchanged, uses
+      # the cached version.
+      - name: Install dependencies
+        run: mix deps.get
+
+      # Step: Compile the project treating any warnings as errors.
+      # Customize this step if a different behavior is desired.
+      - name: Compiles without warnings
+        run: mix compile --warnings-as-errors
+
+      # Package build artifacts for other jobs to use
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: build-artifacts
+          path: |
+            deps
+            _build
+          retention-days: 1
+
+  code_quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      # Step: Setup Elixir + Erlang image as the base.
+      - name: Setup Elixir Env
+        uses: ./.github/actions/setup-elixir-env
+        with:
+          should-download: 'true'
+
+      # Step: Install dependencies for formatter
+      - name: Install dependencies
+        run: mix deps.get
+
+      # Step: Check that the checked in code has already been formatted.
+      # This step fails if something was found unformatted.
+      # Customize this step as desired.
+      - name: Check Formatting
+        run: mix format --check-formatted
+
+      - name: Credo
+        run: mix credo
+
+      # Cache key based on Erlang/Elixir version and the mix.lock hash
+      - name: Read .tool-versions for cache key
+        id: tool-versions
+        run: |
+          echo "elixir-version=$(grep '^elixir ' .tool-versions | awk '{print $2}')" >> $GITHUB_OUTPUT
+          echo "otp-version=$(grep '^erlang ' .tool-versions | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Restore PLT cache
+        id: plt_cache
+        uses: actions/cache/restore@v4
+        with:
+          key: |
+            plt-ci-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            plt-ci-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-
+          path: |
+            priv/plts
+
+      # Create PLTs if no cache was found
+      - name: Create PLTs
+        if: steps.plt_cache.outputs.cache-hit != 'true'
+        run: mix dialyzer --plt
+
+      # By default, the GitHub Cache action will only save the cache if all steps in the job succeed,
+      # so we separate the cache restore and save steps in case running dialyzer fails.
+      - name: Save PLT cache
+        id: plt_cache_save
+        uses: actions/cache/save@v4
+        if: steps.plt_cache.outputs.cache-hit != 'true'
+        with:
+          key: |
+            plt-ci-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
+          path: |
+            priv/plts
+
+      - name: Run dialyzer
+        # Using --format dialyxir and github for better output formatting
+        # The GitHub formatter provides inline annotations for warnings
+        run: mix dialyzer --format github --format dialyxir
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      # Step: Setup Elixir + Erlang image as the base.
+      - name: Setup Elixir Env
+        uses: ./.github/actions/setup-elixir-env
+        with:
+          should-download: 'true'
+
+      # Step: Install dependencies for security checks
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Clean build
+        run: mix clean
+
+      - name: Sobelow
+        run: mix sobelow --config --exit --threshold high
+
+      - name: Mix Audit
+        run: mix deps.audit
+
+      - name: Hex Audit
+        run: mix hex.audit
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: [build]
+    # Set up a Postgres DB service. By default, Phoenix applications
+    # use Postgres. This creates a database for running tests.
+    # Additional services can be defined here if required.
+    services:
+      db:
+        image: postgres:16
+        ports: ['5432:5432']
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      # Step: Setup Elixir + Erlang image as the base.
+      - name: Setup Elixir Env
+        uses: ./.github/actions/setup-elixir-env
+        with:
+          should-download: 'true'
+
+      # Step: Install dependencies for tests
+      - name: Install dependencies
+        run: mix deps.get
+
+      # Step: Setup database for Ash resources
+      - name: Setup database
+        run: |
+          mix ash.setup
+          mix ecto.migrate
+
+      # Step: Execute the tests.
+      - name: Run tests
+        run: mix test --cover
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: coverage
+          path: cover
