@@ -52,6 +52,7 @@ defmodule PilatesOnPhx.Accounts.User do
     attribute :email, :ci_string do
       allow_nil? false
       public? true
+      constraints max_length: 255
     end
 
     attribute :hashed_password, :string do
@@ -137,7 +138,9 @@ defmodule PilatesOnPhx.Accounts.User do
   end
 
   identities do
-    identity :unique_email, [:email]
+    identity :unique_email, [:email] do
+      eager_check_with PilatesOnPhx.Accounts
+    end
   end
 
   preparations do
@@ -254,6 +257,42 @@ defmodule PilatesOnPhx.Accounts.User do
     update :update do
       accept [:name, :role, :email, :confirmed_at]
       require_atomic? false
+
+      # Validate email uniqueness on update
+      change fn changeset, _context ->
+        case Ash.Changeset.get_attribute(changeset, :email) do
+          nil ->
+            changeset
+
+          email ->
+            # Check if email is changing
+            if changeset.data.email != email do
+              # Check if email already exists
+              require Ash.Query
+
+              existing =
+                __MODULE__
+                |> Ash.Query.filter(email == ^email)
+                |> Ash.read_one(domain: PilatesOnPhx.Accounts, authorize?: false)
+
+              case existing do
+                {:ok, nil} ->
+                  changeset
+
+                {:ok, _user} ->
+                  Ash.Changeset.add_error(changeset,
+                    field: :email,
+                    message: "has already been taken"
+                  )
+
+                {:error, _} ->
+                  changeset
+              end
+            else
+              changeset
+            end
+        end
+      end
     end
 
     update :confirm_email do
@@ -262,7 +301,7 @@ defmodule PilatesOnPhx.Accounts.User do
     end
 
     update :change_password do
-      accept []
+      accept [:hashed_password]
       require_atomic? false
 
       argument :current_password, :string do
@@ -289,30 +328,42 @@ defmodule PilatesOnPhx.Accounts.User do
             Ash.Changeset.add_error(changeset, field: :current_password, message: "is required")
 
           current_password ->
-            # Verify current password
+            # Verify current password using the data in changeset
             user = changeset.data
+            hashed_password = Map.get(user, :hashed_password)
 
-            case AshAuthentication.BcryptProvider.valid?(current_password, user.hashed_password) do
-              {:ok, true} ->
-                # Hash new password
-                case AshAuthentication.BcryptProvider.hash(
-                       Ash.Changeset.get_argument(changeset, :password)
-                     ) do
-                  {:ok, hashed} ->
-                    Ash.Changeset.change_attribute(changeset, :hashed_password, hashed)
-
-                  {:error, error} ->
-                    Ash.Changeset.add_error(changeset,
-                      field: :password,
-                      message: "failed to hash: #{inspect(error)}"
-                    )
-                end
-
-              _ ->
+            case hashed_password do
+              nil ->
                 Ash.Changeset.add_error(changeset,
                   field: :current_password,
-                  message: "is incorrect"
+                  message: "could not verify password - hash is nil"
                 )
+
+              hash ->
+                result = AshAuthentication.BcryptProvider.valid?(current_password, hash)
+
+                case result do
+                  true ->
+                    # Hash new password
+                    case AshAuthentication.BcryptProvider.hash(
+                           Ash.Changeset.get_argument(changeset, :password)
+                         ) do
+                      {:ok, hashed} ->
+                        Ash.Changeset.change_attribute(changeset, :hashed_password, hashed)
+
+                      {:error, error} ->
+                        Ash.Changeset.add_error(changeset,
+                          field: :password,
+                          message: "failed to hash: #{inspect(error)}"
+                        )
+                    end
+
+                  _ ->
+                    Ash.Changeset.add_error(changeset,
+                      field: :current_password,
+                      message: "is incorrect"
+                    )
+                end
             end
         end
       end
@@ -350,8 +401,20 @@ defmodule PilatesOnPhx.Accounts.User do
       authorize_if actor_present()
     end
 
-    policy action_type([:update, :destroy]) do
-      # Users can only manage themselves
+    policy action(:change_password) do
+      # Users can only change their own password
+      authorize_if expr(id == ^actor(:id))
+    end
+
+    policy action(:update) do
+      # Users can update themselves
+      authorize_if expr(id == ^actor(:id))
+      # TODO: Add owner check - Organization owners can manage users in their organization
+      # authorize_if {PilatesOnPhx.Accounts.User.Checks.OwnerInSameOrg, []}
+    end
+
+    policy action_type(:destroy) do
+      # Users can destroy themselves
       authorize_if expr(id == ^actor(:id))
     end
   end
