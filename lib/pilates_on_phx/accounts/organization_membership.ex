@@ -140,12 +140,13 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
     end
 
     policy action_type([:update, :destroy]) do
-      # Organization owners can manage memberships
-      authorize_if relates_to_actor_via([:organization, :memberships])
+      # Organization owners can manage all memberships in their org
+      # Use custom check to verify actor is owner in same organization
+      authorize_if {PilatesOnPhx.Accounts.OrganizationMembership.Checks.ActorIsOwnerInSameOrg, []}
     end
 
-    policy action_type([:update, :destroy]) do
-      # Users can remove their own memberships (except owners)
+    policy action_type([:destroy]) do
+      # Users can delete their own memberships (leaving an organization)
       authorize_if expr(user_id == ^actor(:id))
     end
   end
