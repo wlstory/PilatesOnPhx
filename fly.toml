@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for pilatesonphx on 2025-11-10T16:10:41-06:00
+# fly.toml app configuration file generated for pilatesonphx-prod on 2025-11-14T14:20:20-06:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'pilatesonphx'
+app = 'pilatesonphx-prod'
 primary_region = 'iad'
 kill_signal = 'SIGTERM'
 
@@ -13,7 +13,7 @@ kill_signal = 'SIGTERM'
   release_command = '/app/bin/migrate'
 
 [env]
-  PHX_HOST = 'pilatesonphx.fly.dev'
+  PHX_HOST = 'pilatesonphx-prod.fly.dev'
   PORT = '8080'
 
 [http_service]
