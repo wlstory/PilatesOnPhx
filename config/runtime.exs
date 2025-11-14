@@ -30,19 +30,25 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
+  # Fly Postgres uses .flycast internal hostnames and doesn't require SSL
+  # External databases (like Neon) need SSL enabled
+  ssl_config =
+    if String.contains?(database_url, ".flycast") do
+      false
+    else
+      [
+        verify: :verify_none,
+        versions: [:"tlsv1.2", :"tlsv1.3"]
+      ]
+    end
+
   config :pilates_on_phx, PilatesOnPhx.Repo,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     # For machines with several cores, consider starting multiple pools of `pool_size`
     # pool_count: 4,
     socket_options: maybe_ipv6,
-    # SSL configuration for Neon database
-    ssl: true,
-    ssl_opts: [
-      verify: :verify_none,
-      # Neon requires modern TLS versions
-      versions: [:"tlsv1.2", :"tlsv1.3"]
-    ]
+    ssl: ssl_config
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
