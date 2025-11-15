@@ -105,8 +105,18 @@ This is a Phoenix web application built with the **Ash Framework** for resource 
 - **Ash Admin** for administrative interfaces (dev only)
 - **Oban** for background job processing
 - **PostgreSQL** with Ash Postgres data layer
-- **Tailwind CSS** for styling
+- **Tailwind CSS** for styling with **DaisyUI** component library
 - **esbuild** for JavaScript bundling
+
+#### UI Framework: DaisyUI
+
+- **DaisyUI 4.x** - Component library built on Tailwind CSS
+- Pre-built semantic components (buttons, forms, cards, modals, etc.)
+- Customizable themes with CSS variables
+- Accessibility-first approach
+- Documentation: https://daisyui.com/
+- Use DaisyUI components for all UI elements instead of building custom Tailwind utilities
+- Example: `<button class="btn btn-primary">` instead of `<button class="px-4 py-2 bg-blue-500...">`
 
 ### Key Architectural Components
 
