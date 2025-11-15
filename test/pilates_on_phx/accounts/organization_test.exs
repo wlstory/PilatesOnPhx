@@ -841,7 +841,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
               :update,
               %{
                 name: "Updated Name #{i}"
-              }, actor: bypass_actor())
+              },
+              actor: bypass_actor()
+            )
             |> Ash.update(domain: Accounts)
           end)
         end)
