@@ -4,12 +4,19 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
   import Phoenix.LiveViewTest
   import PilatesOnPhxWeb.Layouts
 
+  # Helper to render component and convert to string
+  defp render_component(component_call) do
+    component_call
+    |> Phoenix.HTML.Safe.to_iodata()
+    |> IO.iodata_to_binary()
+  end
+
   describe "app/1" do
     test "renders app layout with content" do
-      assigns = %{flash: %{}, current_scope: nil}
+      assigns = %{flash: %{}}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.app flash={@flash}>
           <h1>Test Content</h1>
         </.app>
@@ -21,10 +28,10 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
     end
 
     test "includes navigation links" do
-      assigns = %{flash: %{}, current_scope: nil}
+      assigns = %{flash: %{}}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.app flash={@flash}>
           Content
         </.app>
@@ -36,10 +43,10 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
     end
 
     test "includes logo" do
-      assigns = %{flash: %{}, current_scope: nil}
+      assigns = %{flash: %{}}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.app flash={@flash}>
           Content
         </.app>
@@ -49,10 +56,10 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
     end
 
     test "includes theme toggle" do
-      assigns = %{flash: %{}, current_scope: nil}
+      assigns = %{flash: %{}}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.app flash={@flash}>
           Content
         </.app>
@@ -65,10 +72,10 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
     end
 
     test "renders flash messages" do
-      assigns = %{flash: %{"info" => "Success message"}, current_scope: nil}
+      assigns = %{flash: %{"info" => "Success message"}}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.app flash={@flash}>
           Content
         </.app>
@@ -83,7 +90,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{}}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.flash_group flash={@flash} />
         """)
 
@@ -95,7 +102,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{}}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.flash_group flash={@flash} id="custom-flash" />
         """)
 
@@ -106,7 +113,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{}}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.flash_group flash={@flash} />
         """)
 
@@ -118,7 +125,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{}}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.flash_group flash={@flash} />
         """)
 
@@ -130,7 +137,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{"info" => "Operation completed"}}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.flash_group flash={@flash} />
         """)
 
@@ -141,7 +148,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{"error" => "Operation failed"}}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.flash_group flash={@flash} />
         """)
 
@@ -154,7 +161,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.theme_toggle />
         """)
 
@@ -168,7 +175,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.theme_toggle />
         """)
 
@@ -181,7 +188,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{}
 
       html =
-        rendered_to_string(~H"""
+        render_component(~H"""
         <.theme_toggle />
         """)
 
