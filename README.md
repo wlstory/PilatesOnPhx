@@ -193,7 +193,7 @@ Access at `/admin` in development.
 
 ## Testing
 
-The project maintains 85%+ test coverage with focus on:
+The project maintains 90%+ test coverage with focus on:
 
 - Business logic validation
 - Authorization and multi-tenant isolation

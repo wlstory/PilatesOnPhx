@@ -54,7 +54,7 @@ PilatesOnPhx is a comprehensive Pilates studio management application built with
   ```
 
 - **NEVER** rewrite tests to make them simple just to get basic tests working
-- **ALWAYS** maintain comprehensive test coverage targeting 85%+
+- **ALWAYS** maintain comprehensive test coverage targeting 90%+
 - **FOCUS ON BUSINESS LOGIC** - Test PilatesOnPhx's custom validations, actions, policies, and domain rules
 - **DO NOT TEST ASH FRAMEWORK** - Skip testing basic Ash features like sorting, filtering, pagination
 - **TEST PILATESONPHX-SPECIFIC FEATURES**: Custom validations, business rules, domain actions, authorization policies
@@ -230,7 +230,7 @@ end
 
 ### Test Coverage Requirements
 
-- Target 85%+ code coverage
+- Target 90%+ code coverage
 - Focus tests on business logic validation
 - Test real user workflows end-to-end
 - Test authorization and multi-tenant isolation

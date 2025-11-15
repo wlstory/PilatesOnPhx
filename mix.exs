@@ -14,7 +14,7 @@ defmodule PilatesOnPhx.MixProject do
       listeners: listeners(Mix.env()),
       consolidate_protocols: Mix.env() != :dev,
       test_coverage: [
-        summary: [threshold: 85],
+        summary: [threshold: 90],
         ignore_modules: [
           # Ignore all Inspect modules
           ~r/^Inspect\./,
