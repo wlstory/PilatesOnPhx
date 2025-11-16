@@ -521,7 +521,9 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
             current_password: "OldPassword123!",
             password: new_password,
             password_confirmation: new_password
-          }, actor: user)
+          },
+          actor: user
+        )
         |> Ash.update(domain: Accounts)
 
       # Step 4: Revoke reset token after use
@@ -613,7 +615,9 @@ defmodule PilatesOnPhx.Accounts.AuthenticationIntegrationTest do
             current_password: "OldPassword123!",
             password: "NewPassword456!",
             password_confirmation: "NewPassword456!"
-          }, actor: user)
+          },
+          actor: user
+        )
         |> Ash.update(domain: Accounts)
 
       # Revoke token after use

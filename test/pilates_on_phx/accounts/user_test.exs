@@ -353,7 +353,9 @@ defmodule PilatesOnPhx.Accounts.UserTest do
                    current_password: old_password,
                    password: new_password,
                    password_confirmation: new_password
-                 }, actor: user_with_password)
+                 },
+                 actor: user_with_password
+               )
                |> Ash.update(domain: Accounts)
 
       # Verify old password no longer works
@@ -388,7 +390,9 @@ defmodule PilatesOnPhx.Accounts.UserTest do
                    current_password: "WrongPassword456!",
                    password: "NewPassword789!",
                    password_confirmation: "NewPassword789!"
-                 }, actor: user)
+                 },
+                 actor: user
+               )
                |> Ash.update(domain: Accounts)
 
       changeset = error.changeset
@@ -407,7 +411,9 @@ defmodule PilatesOnPhx.Accounts.UserTest do
                    current_password: "CurrentPassword123!",
                    password: "NewPassword456!",
                    password_confirmation: "DifferentPassword789!"
-                 }, actor: user)
+                 },
+                 actor: user
+               )
                |> Ash.update(domain: Accounts)
 
       changeset = error.changeset

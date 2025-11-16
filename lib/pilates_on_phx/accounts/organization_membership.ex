@@ -104,9 +104,14 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
             {:error, _} ->
               # If load fails, try to use already loaded memberships
               case Map.get(actor, :memberships) do
-                %Ash.NotLoaded{} -> []
-                memberships when is_list(memberships) -> Enum.map(memberships, & &1.organization_id)
-                _ -> []
+                %Ash.NotLoaded{} ->
+                  []
+
+                memberships when is_list(memberships) ->
+                  Enum.map(memberships, & &1.organization_id)
+
+                _ ->
+                  []
               end
           end
 

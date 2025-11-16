@@ -67,7 +67,9 @@ defmodule PilatesOnPhx.Accounts.User.Checks.OwnerInSameOrg do
       user_org_ids = Enum.map(user_memberships, & &1.organization_id)
 
       # Check if there's any overlap
-      not Enum.empty?(MapSet.intersection(MapSet.new(actor_owner_org_ids), MapSet.new(user_org_ids)))
+      not Enum.empty?(
+        MapSet.intersection(MapSet.new(actor_owner_org_ids), MapSet.new(user_org_ids))
+      )
     end
   end
 end

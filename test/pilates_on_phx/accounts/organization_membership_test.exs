@@ -563,10 +563,11 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       studio_c = create_organization(name: "Studio C")
 
       # Use create_multi_org_user with specific organizations
-      instructor = create_multi_org_user(
-        user_attrs: %{role: :instructor, name: "John Instructor"},
-        organizations: [studio_a, studio_b, studio_c]
-      )
+      instructor =
+        create_multi_org_user(
+          user_attrs: %{role: :instructor, name: "John Instructor"},
+          organizations: [studio_a, studio_b, studio_c]
+        )
 
       # Update the Studio C membership to admin role
       studio_c_membership =
@@ -602,10 +603,11 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       other_studio = create_organization(name: "Other Studio")
 
       # Use create_multi_org_user with specific organizations
-      multi_owner = create_multi_org_user(
-        user_attrs: %{role: :owner, name: "Jane Owner"},
-        organizations: [own_studio_1, own_studio_2, other_studio]
-      )
+      multi_owner =
+        create_multi_org_user(
+          user_attrs: %{role: :owner, name: "Jane Owner"},
+          organizations: [own_studio_1, own_studio_2, other_studio]
+        )
 
       # Update the roles for each membership
       for {org, role} <- [{own_studio_1, :owner}, {own_studio_2, :owner}, {other_studio, :admin}] do
@@ -640,10 +642,11 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       work_studio = create_organization(name: "Work Studio")
 
       # Use create_multi_org_user with specific organizations
-      client = create_multi_org_user(
-        user_attrs: %{role: :client, name: "Client Member"},
-        organizations: [nearby_studio_1, nearby_studio_2, work_studio]
-      )
+      client =
+        create_multi_org_user(
+          user_attrs: %{role: :client, name: "Client Member"},
+          organizations: [nearby_studio_1, nearby_studio_2, work_studio]
+        )
 
       memberships =
         OrganizationMembership
@@ -901,7 +904,8 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       |> Ash.update!(domain: Accounts)
 
       # Reload owner with memberships for policy checks
-      owner = Ash.load!(owner, [:memberships, :organizations], domain: Accounts, actor: bypass_actor())
+      owner =
+        Ash.load!(owner, [:memberships, :organizations], domain: Accounts, actor: bypass_actor())
 
       # Load organization with memberships for policy check
       member_membership =
