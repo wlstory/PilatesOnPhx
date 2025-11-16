@@ -3,6 +3,7 @@ defmodule PilatesOnPhx.Accounts.User.Checks.OwnerInSameOrgTest do
 
   alias PilatesOnPhx.Accounts
   alias PilatesOnPhx.Accounts.User.Checks.OwnerInSameOrg
+  import PilatesOnPhx.AccountsFixtures
 
   require Ash.Query
 
@@ -14,69 +15,25 @@ defmodule PilatesOnPhx.Accounts.User.Checks.OwnerInSameOrgTest do
 
   describe "match?/3" do
     setup do
-      # Create organizations
-      {:ok, org1} =
-        Accounts.Organization
-        |> Ash.Changeset.for_create(:create, %{name: "Org 1"})
-        |> Ash.create()
+      # Create two organizations
+      org1 = create_organization(%{name: "Org 1"})
+      org2 = create_organization(%{name: "Org 2"})
 
-      {:ok, org2} =
-        Accounts.Organization
-        |> Ash.Changeset.for_create(:create, %{name: "Org 2"})
-        |> Ash.create()
+      # Create users - these will have one organization membership by default
+      owner_user = create_user(%{email: "owner@example.com", organization: org1})
+      member_user = create_user(%{email: "member@example.com", organization: org1})
+      other_user = create_user(%{email: "other@example.com", organization: org2})
 
-      # Create users
-      {:ok, owner_user} =
-        Accounts.User
-        |> Ash.Changeset.for_create(:create, %{
-          email: "owner@example.com",
-          hashed_password: Bcrypt.hash_pwd_salt("password123")
-        })
-        |> Ash.create()
-
-      {:ok, member_user} =
-        Accounts.User
-        |> Ash.Changeset.for_create(:create, %{
-          email: "member@example.com",
-          hashed_password: Bcrypt.hash_pwd_salt("password123")
-        })
-        |> Ash.create()
-
-      {:ok, other_user} =
-        Accounts.User
-        |> Ash.Changeset.for_create(:create, %{
-          email: "other@example.com",
-          hashed_password: Bcrypt.hash_pwd_salt("password123")
-        })
-        |> Ash.create()
-
-      # Create memberships
-      {:ok, _owner_membership} =
+      # Update owner's membership to have owner role
+      owner_membership =
         Accounts.OrganizationMembership
-        |> Ash.Changeset.for_create(:create, %{
-          organization_id: org1.id,
-          user_id: owner_user.id,
-          role: :owner
-        })
-        |> Ash.create()
+        |> Ash.Query.filter(user_id == ^owner_user.id and organization_id == ^org1.id)
+        |> Ash.read_one!(domain: Accounts, authorize?: false)
 
-      {:ok, _member_membership} =
-        Accounts.OrganizationMembership
-        |> Ash.Changeset.for_create(:create, %{
-          organization_id: org1.id,
-          user_id: member_user.id,
-          role: :member
-        })
-        |> Ash.create()
-
-      {:ok, _other_membership} =
-        Accounts.OrganizationMembership
-        |> Ash.Changeset.for_create(:create, %{
-          organization_id: org2.id,
-          user_id: other_user.id,
-          role: :member
-        })
-        |> Ash.create()
+      {:ok, _updated_membership} =
+        owner_membership
+        |> Ash.Changeset.for_update(:update, %{role: :owner})
+        |> Ash.update(domain: Accounts, authorize?: false)
 
       %{
         org1: org1,
@@ -126,22 +83,19 @@ defmodule PilatesOnPhx.Accounts.User.Checks.OwnerInSameOrgTest do
     end
 
     test "handles actor with no memberships" do
-      # Create a new user with no memberships
-      {:ok, actor} =
-        Accounts.User
-        |> Ash.Changeset.for_create(:create, %{
-          email: "nomemberships@example.com",
-          hashed_password: Bcrypt.hash_pwd_salt("password123")
-        })
-        |> Ash.create()
+      # Create a new user and organization, then remove the membership
+      org = create_organization()
+      actor = create_user(%{email: "nomemberships@example.com", organization: org})
 
-      {:ok, target} =
-        Accounts.User
-        |> Ash.Changeset.for_create(:create, %{
-          email: "target@example.com",
-          hashed_password: Bcrypt.hash_pwd_salt("password123")
-        })
-        |> Ash.create()
+      # Delete the membership
+      membership =
+        Accounts.OrganizationMembership
+        |> Ash.Query.filter(user_id == ^actor.id)
+        |> Ash.read_one!(domain: Accounts, authorize?: false)
+
+      Ash.destroy!(membership, domain: Accounts, authorize?: false)
+
+      target = create_user(%{email: "target@example.com"})
 
       {:ok, actor_with_memberships} = Ash.load(actor, :memberships, domain: Accounts)
       context = %{resource: target}
@@ -150,14 +104,17 @@ defmodule PilatesOnPhx.Accounts.User.Checks.OwnerInSameOrgTest do
     end
 
     test "handles target user with no memberships", %{owner_user: actor} do
-      # Create a new user with no memberships
-      {:ok, target} =
-        Accounts.User
-        |> Ash.Changeset.for_create(:create, %{
-          email: "target@example.com",
-          hashed_password: Bcrypt.hash_pwd_salt("password123")
-        })
-        |> Ash.create()
+      # Create a new user and remove their membership
+      org = create_organization()
+      target = create_user(%{email: "target@example.com", organization: org})
+
+      # Delete the membership
+      membership =
+        Accounts.OrganizationMembership
+        |> Ash.Query.filter(user_id == ^target.id)
+        |> Ash.read_one!(domain: Accounts, authorize?: false)
+
+      Ash.destroy!(membership, domain: Accounts, authorize?: false)
 
       {:ok, actor_with_memberships} = Ash.load(actor, :memberships, domain: Accounts)
       context = %{resource: target}

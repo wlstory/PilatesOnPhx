@@ -1,22 +1,16 @@
 defmodule PilatesOnPhxWeb.LayoutsTest do
   use PilatesOnPhxWeb.ConnCase, async: true
 
+  import Phoenix.Component
   import Phoenix.LiveViewTest
   import PilatesOnPhxWeb.Layouts
-
-  # Helper to render component and convert to string
-  defp render_component(component_call) do
-    component_call
-    |> Phoenix.HTML.Safe.to_iodata()
-    |> IO.iodata_to_binary()
-  end
 
   describe "app/1" do
     test "renders app layout with content" do
       assigns = %{flash: %{}}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.app flash={@flash}>
           <h1>Test Content</h1>
         </.app>
@@ -31,7 +25,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{}}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.app flash={@flash}>
           Content
         </.app>
@@ -46,7 +40,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{}}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.app flash={@flash}>
           Content
         </.app>
@@ -59,7 +53,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{}}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.app flash={@flash}>
           Content
         </.app>
@@ -75,7 +69,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{"info" => "Success message"}}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.app flash={@flash}>
           Content
         </.app>
@@ -90,7 +84,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{}}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.flash_group flash={@flash} />
         """)
 
@@ -102,7 +96,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{}}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.flash_group flash={@flash} id="custom-flash" />
         """)
 
@@ -113,7 +107,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{}}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.flash_group flash={@flash} />
         """)
 
@@ -125,7 +119,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{}}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.flash_group flash={@flash} />
         """)
 
@@ -137,7 +131,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{"info" => "Operation completed"}}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.flash_group flash={@flash} />
         """)
 
@@ -148,7 +142,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{flash: %{"error" => "Operation failed"}}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.flash_group flash={@flash} />
         """)
 
@@ -161,7 +155,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.theme_toggle />
         """)
 
@@ -175,7 +169,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.theme_toggle />
         """)
 
@@ -188,7 +182,7 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
       assigns = %{}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.theme_toggle />
         """)
 

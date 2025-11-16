@@ -1,15 +1,9 @@
 defmodule PilatesOnPhxWeb.CoreComponentsTest do
   use PilatesOnPhxWeb.ConnCase, async: true
 
+  import Phoenix.Component
   import Phoenix.LiveViewTest
   import PilatesOnPhxWeb.CoreComponents
-
-  # Helper to render component and convert to string
-  defp render_component(component_call) do
-    component_call
-    |> Phoenix.HTML.Safe.to_iodata()
-    |> IO.iodata_to_binary()
-  end
 
   describe "flash/1" do
     test "renders info flash message" do
@@ -20,7 +14,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       }
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.flash kind={:info} flash={@flash} id="flash-info" />
         """)
 
@@ -35,7 +29,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       }
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.flash kind={:error} flash={@flash} id="flash-error" />
         """)
 
@@ -51,7 +45,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       }
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.flash kind={:info} flash={@flash} title="Custom Title" id="flash-custom" />
         """)
 
@@ -64,7 +58,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       assigns = %{}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.button>Click me</.button>
         """)
 
@@ -76,7 +70,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       assigns = %{}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.button type="submit">Submit</.button>
         """)
 
@@ -101,7 +95,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       assigns = %{form: form}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.input field={@form[:email]} type="text" />
         """)
 
@@ -113,7 +107,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       assigns = %{form: form}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.input field={@form[:accept]} type="checkbox" label="Accept terms" />
         """)
 
@@ -125,7 +119,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       assigns = %{form: form}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.input field={@form[:role]} type="select" options={[{"Admin", "admin"}, {"User", "user"}]} />
         """)
 
@@ -138,7 +132,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       assigns = %{form: form}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.input field={@form[:bio]} type="textarea" />
         """)
 
@@ -151,7 +145,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       assigns = %{}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.header>
           Page Title
         </.header>
@@ -164,7 +158,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       assigns = %{}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.header>
           Main Title
           <:subtitle>Subtitle text</:subtitle>
@@ -190,7 +184,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       assigns = %{rows: rows}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.table id="users" rows={@rows}>
           <:col :let={user} label="Name">{user.name}</:col>
           <:col :let={user} label="Email">{user.email}</:col>
@@ -209,7 +203,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       assigns = %{}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.list>
           <:item title="Name">John Doe</:item>
           <:item title="Email">john@example.com</:item>
@@ -228,7 +222,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       assigns = %{}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.icon name="hero-user" />
         """)
 
@@ -240,7 +234,7 @@ defmodule PilatesOnPhxWeb.CoreComponentsTest do
       assigns = %{}
 
       html =
-        render_component(~H"""
+        rendered_to_string(~H"""
         <.icon name="hero-home" class="custom-icon" />
         """)
 
