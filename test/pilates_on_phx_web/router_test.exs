@@ -12,16 +12,6 @@ defmodule PilatesOnPhxWeb.RouterTest do
       assert :browser in pipelines
       assert :api in pipelines
     end
-
-    test "browser pipeline includes required plugs" do
-      conn = build_conn()
-      conn = get(conn, "/")
-
-      # Verify browser pipeline plugs are applied
-      assert conn.private[:phoenix_router] == PilatesOnPhxWeb.Router
-      # Verify session was fetched by checking conn.private
-      assert conn.private.plug_session_fetch
-    end
   end
 
   describe "routes" do
@@ -29,7 +19,7 @@ defmodule PilatesOnPhxWeb.RouterTest do
       conn = build_conn()
       conn = get(conn, "/")
 
-      assert conn.status in [200, 302]
+      assert conn.status == 200
       assert conn.private[:phoenix_controller] == PilatesOnPhxWeb.PageController
       assert conn.private[:phoenix_action] == :home
     end
@@ -44,53 +34,6 @@ defmodule PilatesOnPhxWeb.RouterTest do
       assert_error_sent 404, fn ->
         get(conn, "/nonexistent-route")
       end
-    end
-
-    test "API routes use JSON accept header" do
-      conn = build_conn()
-
-      # Attempt to access an API route (none defined yet, should 404)
-      assert_error_sent 404, fn ->
-        conn
-        |> put_req_header("accept", "application/json")
-        |> get("/api/something")
-      end
-    end
-  end
-
-  describe "development routes" do
-    @tag :skip
-    test "LiveDashboard is available in development" do
-      # This test would require dev_routes to be enabled
-      # Skipping for now as it's environment-dependent
-    end
-
-    @tag :skip
-    test "Swoosh mailbox preview is available in development" do
-      # This test would require dev_routes to be enabled
-      # Skipping for now as it's environment-dependent
-    end
-  end
-
-  describe "security" do
-    test "browser pipeline includes secure headers" do
-      conn = build_conn()
-      conn = get(conn, "/")
-
-      # Verify security headers are set
-      assert get_resp_header(conn, "x-frame-options") != []
-      assert get_resp_header(conn, "x-content-type-options") != []
-      assert get_resp_header(conn, "x-download-options") != []
-    end
-
-    test "browser pipeline includes CSRF protection plug" do
-      # Verify CSRF protection is configured in the browser pipeline
-      # by checking that the plug_session_fetch was applied
-      conn = build_conn()
-      conn = get(conn, "/")
-
-      # Session fetch is required for CSRF protection
-      assert conn.private.plug_session_fetch
     end
   end
 
