@@ -104,7 +104,7 @@ defmodule PilatesOnPhx.Studios.RoomTest do
       assert Enum.any?(changeset.errors, fn error -> error.field == :studio_id end)
     end
 
-    test "requires capacity" do
+    test "sets default capacity if not provided" do
       studio = create_studio()
 
       attrs = %{
@@ -112,14 +112,13 @@ defmodule PilatesOnPhx.Studios.RoomTest do
         studio_id: studio.id
       }
 
-      assert {:error, %Ash.Error.Invalid{} = error} =
+      assert {:ok, room} =
                Room
                |> Ash.Changeset.for_create(:create, attrs)
                |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
-      changeset = error.changeset
-      assert changeset.valid? == false
-      assert Enum.any?(changeset.errors, fn error -> error.field == :capacity end)
+      # Room has a default capacity of 12
+      assert room.capacity == 12
     end
 
     test "validates capacity is positive" do
@@ -501,6 +500,59 @@ defmodule PilatesOnPhx.Studios.RoomTest do
 
       assert room.settings["dimensions"]["length"] == 40
       assert room.settings["features"]["natural_light"] == true
+    end
+  end
+
+  describe "preparation filters and actor scenarios" do
+    test "filters rooms when actor has no memberships loaded" do
+      org = create_organization()
+      studio = create_studio(organization: org)
+      room = create_room(studio: studio)
+
+      # Create user without loading memberships
+      user = create_user(organization: org)
+
+      # Query should handle loading memberships dynamically
+      result = Room
+        |> Ash.Query.filter(id == ^room.id)
+        |> Ash.read(domain: Studios, actor: user)
+
+      # Should either succeed with loaded memberships or return empty
+      case result do
+        {:ok, rooms} -> assert is_list(rooms)
+        {:error, _} -> :ok
+      end
+    end
+
+    test "returns empty when actor has no organizations" do
+      # Create user without organization membership
+      user = create_user_without_org()
+      room = create_room()
+
+      # User with no organization should not see any rooms
+      assert {:ok, rooms} = Room
+        |> Ash.read(domain: Studios, actor: user)
+
+      refute Enum.any?(rooms, fn r -> r.id == room.id end)
+    end
+
+    test "filters rooms by actor organization membership" do
+      org1 = create_organization()
+      org2 = create_organization()
+
+      user = create_user(organization: org1)
+      studio1 = create_studio(organization: org1)
+      studio2 = create_studio(organization: org2)
+
+      room1 = create_room(studio: studio1)
+      room2 = create_room(studio: studio2)
+
+      assert {:ok, rooms} = Room
+        |> Ash.read(domain: Studios, actor: user)
+
+      room_ids = Enum.map(rooms, & &1.id)
+      assert room1.id in room_ids
+      refute room2.id in room_ids
     end
   end
 

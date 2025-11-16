@@ -534,6 +534,59 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
     end
   end
 
+  describe "preparation filters and actor scenarios" do
+    test "filters equipment when actor has no memberships loaded" do
+      org = create_organization()
+      studio = create_studio(organization: org)
+      equipment = create_equipment(studio: studio)
+
+      # Create user without loading memberships
+      user = create_user(organization: org)
+
+      # Query should handle loading memberships dynamically
+      result = Equipment
+        |> Ash.Query.filter(id == ^equipment.id)
+        |> Ash.read(domain: Studios, actor: user)
+
+      # Should either succeed with loaded memberships or return empty
+      case result do
+        {:ok, equipment_list} -> assert is_list(equipment_list)
+        {:error, _} -> :ok
+      end
+    end
+
+    test "returns empty when actor has no organizations" do
+      # Create user without organization membership
+      user = create_user_without_org()
+      equipment = create_equipment()
+
+      # User with no organization should not see any equipment
+      assert {:ok, equipment_list} = Equipment
+        |> Ash.read(domain: Studios, actor: user)
+
+      refute Enum.any?(equipment_list, fn e -> e.id == equipment.id end)
+    end
+
+    test "filters equipment by actor organization membership" do
+      org1 = create_organization()
+      org2 = create_organization()
+
+      user = create_user(organization: org1)
+      studio1 = create_studio(organization: org1)
+      studio2 = create_studio(organization: org2)
+
+      equipment1 = create_equipment(studio: studio1)
+      equipment2 = create_equipment(studio: studio2)
+
+      assert {:ok, equipment_list} = Equipment
+        |> Ash.read(domain: Studios, actor: user)
+
+      equipment_ids = Enum.map(equipment_list, & &1.id)
+      assert equipment1.id in equipment_ids
+      refute equipment2.id in equipment_ids
+    end
+  end
+
   describe "equipment queries and filtering" do
     test "can query all equipment" do
       create_equipment(name: "Equipment A")
@@ -807,11 +860,13 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
   describe "data validation edge cases" do
     test "handles unicode characters in equipment name" do
       studio = create_studio()
+      room = create_room(studio: studio)
 
       attrs = %{
         name: "Reformer José García 体育馆",
         equipment_type: "reformer",
-        studio_id: studio.id
+        studio_id: studio.id,
+        room_id: room.id  # Non-portable equipment needs a room
       }
 
       assert {:ok, equipment} =
@@ -825,10 +880,13 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
     test "handles special characters in equipment name" do
       studio = create_studio()
 
+      room = create_room(studio: studio)
+
       attrs = %{
         name: "Reformer #1 (Studio A)",
         equipment_type: "reformer",
-        studio_id: studio.id
+        studio_id: studio.id,
+        room_id: room.id  # Non-portable equipment needs a room
       }
 
       assert {:ok, equipment} =

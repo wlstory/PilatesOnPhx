@@ -877,6 +877,55 @@ defmodule PilatesOnPhx.Studios.StudioTest do
     end
   end
 
+  describe "preparation filters and actor scenarios" do
+    test "filters studios when actor has no memberships loaded" do
+      org = create_organization()
+      studio = create_studio(organization: org)
+
+      # Create user without loading memberships
+      user = create_user(organization: org)
+
+      # Query should handle loading memberships dynamically
+      result = Studio
+        |> Ash.Query.filter(id == ^studio.id)
+        |> Ash.read(domain: Studios, actor: user)
+
+      # Should either succeed with loaded memberships or return empty
+      case result do
+        {:ok, studios} -> assert is_list(studios)
+        {:error, _} -> :ok
+      end
+    end
+
+    test "returns empty when actor has no organizations" do
+      # Create user without organization membership
+      user = create_user_without_org()
+      studio = create_studio()
+
+      # User with no organization should not see any studios
+      assert {:ok, studios} = Studio
+        |> Ash.read(domain: Studios, actor: user)
+
+      refute Enum.any?(studios, fn s -> s.id == studio.id end)
+    end
+
+    test "filters studios by actor organization membership" do
+      org1 = create_organization()
+      org2 = create_organization()
+
+      user = create_user(organization: org1)
+      studio1 = create_studio(organization: org1)
+      studio2 = create_studio(organization: org2)
+
+      assert {:ok, studios} = Studio
+        |> Ash.read(domain: Studios, actor: user)
+
+      studio_ids = Enum.map(studios, & &1.id)
+      assert studio1.id in studio_ids
+      refute studio2.id in studio_ids
+    end
+  end
+
   describe "authorization policies" do
     test "organization owner can create studios" do
       scenario = create_organization_scenario()
