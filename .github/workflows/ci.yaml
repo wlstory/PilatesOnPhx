@@ -80,7 +80,7 @@ jobs:
         run: mix format --check-formatted
 
       - name: Credo
-        run: mix credo
+        run: mix credo --strict
 
       # Cache key based on Erlang/Elixir version and the mix.lock hash
       - name: Read .tool-versions for cache key
