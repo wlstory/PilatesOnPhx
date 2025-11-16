@@ -1129,4 +1129,281 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       # This behavior needs to be defined in Studio resource
     end
   end
+
+  describe "additional timezone validations for coverage" do
+    test "accepts all IANA timezone options from Americas" do
+      org = create_organization()
+
+      timezones = [
+        "America/Denver",
+        "America/Phoenix",
+        "America/Anchorage",
+        "America/Honolulu",
+        "America/Toronto",
+        "America/Vancouver",
+        "America/Mexico_City",
+        "America/Sao_Paulo",
+        "America/Buenos_Aires"
+      ]
+
+      Enum.each(timezones, fn tz ->
+        attrs = %{
+          name: "Studio #{tz}",
+          address: "123 Main St",
+          timezone: tz,
+          organization_id: org.id
+        }
+
+        assert {:ok, studio} =
+                 Studio
+                 |> Ash.Changeset.for_create(:create, attrs)
+                 |> Ash.create(domain: Studios, actor: bypass_actor())
+
+        assert studio.timezone == tz
+      end)
+    end
+
+    test "accepts all IANA timezone options from Europe" do
+      org = create_organization()
+
+      timezones = [
+        "Europe/Paris",
+        "Europe/Berlin",
+        "Europe/Rome",
+        "Europe/Madrid",
+        "Europe/Amsterdam",
+        "Europe/Brussels",
+        "Europe/Vienna",
+        "Europe/Stockholm",
+        "Europe/Copenhagen",
+        "Europe/Dublin",
+        "Europe/Lisbon",
+        "Europe/Athens",
+        "Europe/Prague",
+        "Europe/Warsaw",
+        "Europe/Moscow"
+      ]
+
+      Enum.each(timezones, fn tz ->
+        attrs = %{
+          name: "Studio #{tz}",
+          address: "123 Main St",
+          timezone: tz,
+          organization_id: org.id
+        }
+
+        assert {:ok, studio} =
+                 Studio
+                 |> Ash.Changeset.for_create(:create, attrs)
+                 |> Ash.create(domain: Studios, actor: bypass_actor())
+
+        assert studio.timezone == tz
+      end)
+    end
+
+    test "accepts all IANA timezone options from Asia and Pacific" do
+      org = create_organization()
+
+      timezones = [
+        "Asia/Tokyo",
+        "Asia/Seoul",
+        "Asia/Shanghai",
+        "Asia/Hong_Kong",
+        "Asia/Singapore",
+        "Asia/Bangkok",
+        "Asia/Dubai",
+        "Asia/Kolkata",
+        "Asia/Jerusalem",
+        "Asia/Tehran",
+        "Pacific/Auckland",
+        "Pacific/Sydney",
+        "Pacific/Melbourne",
+        "Pacific/Fiji",
+        "Pacific/Guam",
+        "Australia/Sydney",
+        "Australia/Melbourne",
+        "Australia/Brisbane",
+        "Australia/Perth",
+        "Australia/Adelaide",
+        "GMT"
+      ]
+
+      Enum.each(timezones, fn tz ->
+        attrs = %{
+          name: "Studio #{tz}",
+          address: "123 Main St",
+          timezone: tz,
+          organization_id: org.id
+        }
+
+        assert {:ok, studio} =
+                 Studio
+                 |> Ash.Changeset.for_create(:create, attrs)
+                 |> Ash.create(domain: Studios, actor: bypass_actor())
+
+        assert studio.timezone == tz
+      end)
+    end
+  end
+
+  describe "operating hours validation and edge cases" do
+    test "accepts empty operating hours map" do
+      org = create_organization()
+
+      attrs = %{
+        name: "No Hours Studio",
+        address: "123 Main St",
+        operating_hours: %{},
+        organization_id: org.id
+      }
+
+      assert {:ok, studio} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: bypass_actor())
+
+      assert studio.operating_hours == %{}
+    end
+
+    test "accepts partial operating hours (some days only)" do
+      org = create_organization()
+
+      attrs = %{
+        name: "Partial Hours Studio",
+        address: "123 Main St",
+        operating_hours: %{
+          "mon" => "9:00-17:00",
+          "wed" => "9:00-17:00",
+          "fri" => "9:00-17:00"
+        },
+        organization_id: org.id
+      }
+
+      assert {:ok, studio} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: bypass_actor())
+
+      assert studio.operating_hours["mon"] == "9:00-17:00"
+      assert studio.operating_hours["wed"] == "9:00-17:00"
+      refute Map.has_key?(studio.operating_hours, "tue")
+    end
+
+    test "accepts closed days in operating hours" do
+      org = create_organization()
+
+      attrs = %{
+        name: "Closed Days Studio",
+        address: "123 Main St",
+        operating_hours: %{
+          "mon" => "6:00-20:00",
+          "tue" => "6:00-20:00",
+          "sun" => "closed"
+        },
+        organization_id: org.id
+      }
+
+      assert {:ok, studio} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: bypass_actor())
+
+      assert studio.operating_hours["sun"] == "closed"
+    end
+  end
+
+  describe "max capacity boundary testing" do
+    test "accepts minimum valid capacity of 1" do
+      org = create_organization()
+
+      attrs = %{
+        name: "Min Capacity Studio",
+        address: "123 Main St",
+        max_capacity: 1,
+        organization_id: org.id
+      }
+
+      assert {:ok, studio} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: bypass_actor())
+
+      assert studio.max_capacity == 1
+    end
+
+    test "accepts maximum valid capacity of 500" do
+      org = create_organization()
+
+      attrs = %{
+        name: "Max Capacity Studio",
+        address: "123 Main St",
+        max_capacity: 500,
+        organization_id: org.id
+      }
+
+      assert {:ok, studio} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: bypass_actor())
+
+      assert studio.max_capacity == 500
+    end
+
+    test "rejects negative capacity" do
+      org = create_organization()
+
+      attrs = %{
+        name: "Negative Capacity Studio",
+        address: "123 Main St",
+        max_capacity: -10,
+        organization_id: org.id
+      }
+
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: bypass_actor())
+
+      changeset = error.changeset
+      assert changeset.valid? == false
+    end
+  end
+
+  describe "address validation edge cases" do
+    test "validates address is not empty string" do
+      org = create_organization()
+
+      attrs = %{
+        name: "No Address Studio",
+        address: "",
+        organization_id: org.id
+      }
+
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: bypass_actor())
+
+      changeset = error.changeset
+      assert changeset.valid? == false
+      assert Enum.any?(changeset.errors, fn error -> error.field == :address end)
+    end
+
+    test "accepts international addresses with unicode" do
+      org = create_organization()
+
+      attrs = %{
+        name: "International Studio",
+        address: "123 Rue de la Paix, 75002 Paris, France - 平和通り123号",
+        organization_id: org.id
+      }
+
+      assert {:ok, studio} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: bypass_actor())
+
+      assert studio.address == "123 Rue de la Paix, 75002 Paris, France - 平和通り123号"
+    end
+  end
 end

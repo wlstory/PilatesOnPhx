@@ -154,8 +154,28 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
     end
 
     test "sets default permissions as empty list" do
-      staff = create_studio_staff(permissions: nil)
-      assert staff.permissions == [] or is_list(staff.permissions)
+      # Don't pass permissions attribute to test the default value
+      studio = create_studio()
+
+      user =
+        create_user(
+          organization:
+            Ash.load!(studio, :organization, actor: PilatesOnPhx.StudiosFixtures.bypass_actor()).organization
+        )
+
+      attrs = %{
+        studio_id: studio.id,
+        user_id: user.id,
+        role: :instructor
+        # Note: permissions not included - should default to []
+      }
+
+      assert {:ok, staff} =
+               StudioStaff
+               |> Ash.Changeset.for_create(:assign, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert staff.permissions == []
     end
 
     test "allows custom permissions list" do
@@ -206,14 +226,15 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
                |> Ash.Changeset.for_create(:assign, attrs)
                |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
-      # Second assignment should fail (unique constraint)
-      assert {:error, %Ash.Error.Invalid{} = error} =
+      # Second assignment should fail (unique constraint violation from database)
+      assert {:error, error} =
                StudioStaff
                |> Ash.Changeset.for_create(:assign, attrs)
                |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
-      changeset = error.changeset
-      assert changeset.valid? == false
+      # The error should be related to uniqueness constraint
+      # Database unique constraint errors are wrapped in Ash.Error.Invalid
+      assert %Ash.Error.Invalid{} = error
     end
   end
 
@@ -972,6 +993,175 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
         |> Ash.read_one!(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
       assert found_studio.id == studio.id
+    end
+  end
+
+  describe "staff role and permission combinations" do
+    test "instructor with minimal permissions" do
+      staff = create_studio_staff(role: :instructor, permissions: ["teach"])
+      assert staff.role == :instructor
+      assert staff.permissions == ["teach"]
+      assert length(staff.permissions) == 1
+    end
+
+    test "manager with full permissions" do
+      full_permissions = [
+        "teach",
+        "view_schedule",
+        "manage_schedule",
+        "manage_staff",
+        "manage_clients",
+        "view_reports",
+        "manage_equipment",
+        "view_analytics"
+      ]
+
+      staff = create_studio_staff(role: :manager, permissions: full_permissions)
+      assert staff.role == :manager
+      assert length(staff.permissions) == 8
+    end
+
+    test "front_desk with customer service permissions" do
+      permissions = ["view_schedule", "check_in_clients", "manage_clients"]
+      staff = create_studio_staff(role: :front_desk, permissions: permissions)
+      assert staff.role == :front_desk
+      assert "check_in_clients" in staff.permissions
+    end
+  end
+
+  describe "staff notes validation" do
+    test "accepts very long notes within limit" do
+      long_notes = String.duplicate("a", 1900)
+      staff = create_studio_staff(notes: long_notes)
+      assert String.length(staff.notes) == 1900
+    end
+
+    test "rejects notes exceeding max_length constraint" do
+      too_long_notes = String.duplicate("a", 2100)
+
+      studio = create_studio()
+
+      user =
+        create_user(
+          organization:
+            Ash.load!(studio, :organization, actor: PilatesOnPhx.StudiosFixtures.bypass_actor()).organization
+        )
+
+      attrs = %{
+        studio_id: studio.id,
+        user_id: user.id,
+        role: :instructor,
+        notes: too_long_notes
+      }
+
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               StudioStaff
+               |> Ash.Changeset.for_create(:assign, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      changeset = error.changeset
+      assert changeset.valid? == false
+    end
+
+    test "accepts unicode characters in notes" do
+      notes = "Instructor José García - 专业教练 - speaks 日本語, Español, English"
+      staff = create_studio_staff(notes: notes)
+      assert staff.notes == notes
+    end
+  end
+
+  describe "staff cross-organization validation edge cases" do
+    test "fails when user from different org is assigned" do
+      org1 = create_organization()
+      org2 = create_organization()
+
+      studio1 = create_studio(organization: org1)
+      user2 = create_user(organization: org2)
+
+      attrs = %{
+        studio_id: studio1.id,
+        user_id: user2.id,
+        role: :instructor
+      }
+
+      # Should fail validation - user not in studio's organization
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               StudioStaff
+               |> Ash.Changeset.for_create(:assign, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      changeset = error.changeset
+      assert changeset.valid? == false
+    end
+
+    test "succeeds when user and studio share organization" do
+      org = create_organization()
+      studio = create_studio(organization: org)
+      user = create_user(organization: org)
+
+      attrs = %{
+        studio_id: studio.id,
+        user_id: user.id,
+        role: :instructor
+      }
+
+      assert {:ok, staff} =
+               StudioStaff
+               |> Ash.Changeset.for_create(:assign, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert staff.studio_id == studio.id
+      assert staff.user_id == user.id
+    end
+  end
+
+  describe "staff permissions array manipulation" do
+    test "can add permissions to existing staff" do
+      staff = create_studio_staff(permissions: ["teach"])
+
+      new_permissions = staff.permissions ++ ["view_schedule", "manage_equipment"]
+
+      assert {:ok, updated} =
+               staff
+               |> Ash.Changeset.for_update(:update, %{permissions: new_permissions},
+                 actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+               )
+               |> Ash.update(domain: Studios)
+
+      assert "teach" in updated.permissions
+      assert "view_schedule" in updated.permissions
+      assert "manage_equipment" in updated.permissions
+      assert length(updated.permissions) == 3
+    end
+
+    test "can remove permissions from existing staff" do
+      staff =
+        create_studio_staff(permissions: ["teach", "view_schedule", "manage_equipment", "view_reports"])
+
+      reduced_permissions = ["teach", "view_schedule"]
+
+      assert {:ok, updated} =
+               staff
+               |> Ash.Changeset.for_update(:update, %{permissions: reduced_permissions},
+                 actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+               )
+               |> Ash.update(domain: Studios)
+
+      assert updated.permissions == ["teach", "view_schedule"]
+      assert length(updated.permissions) == 2
+    end
+
+    test "can clear all permissions" do
+      staff = create_studio_staff(permissions: ["teach", "view_schedule"])
+
+      assert {:ok, updated} =
+               staff
+               |> Ash.Changeset.for_update(:update, %{permissions: []},
+                 actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+               )
+               |> Ash.update(domain: Studios)
+
+      assert updated.permissions == []
     end
   end
 end

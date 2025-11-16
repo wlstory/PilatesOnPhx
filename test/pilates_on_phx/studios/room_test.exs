@@ -935,4 +935,212 @@ defmodule PilatesOnPhx.Studios.RoomTest do
       # This behavior needs to be defined in Room resource
     end
   end
+
+  describe "room capacity boundary testing" do
+    test "accepts minimum valid capacity of 1" do
+      studio = create_studio()
+
+      attrs = %{
+        name: "Minimum Capacity Room",
+        capacity: 1,
+        studio_id: studio.id
+      }
+
+      assert {:ok, room} =
+               Room
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert room.capacity == 1
+    end
+
+    test "accepts maximum valid capacity of 100" do
+      studio = create_studio()
+
+      attrs = %{
+        name: "Maximum Capacity Room",
+        capacity: 100,
+        studio_id: studio.id
+      }
+
+      assert {:ok, room} =
+               Room
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert room.capacity == 100
+    end
+
+    test "rejects capacity above maximum" do
+      studio = create_studio()
+
+      attrs = %{
+        name: "Too Large Room",
+        capacity: 150,
+        studio_id: studio.id
+      }
+
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               Room
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      changeset = error.changeset
+      assert changeset.valid? == false
+    end
+
+    test "rejects negative capacity" do
+      studio = create_studio()
+
+      attrs = %{
+        name: "Negative Capacity Room",
+        capacity: -5,
+        studio_id: studio.id
+      }
+
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               Room
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      changeset = error.changeset
+      assert changeset.valid? == false
+    end
+  end
+
+  describe "room settings comprehensive testing" do
+    test "handles boolean flags in settings" do
+      room =
+        create_room(
+          settings: %{
+            air_conditioning: true,
+            heating: true,
+            natural_light: false,
+            wheelchair_accessible: true
+          }
+        )
+
+      assert room.settings["air_conditioning"] == true
+      assert room.settings["natural_light"] == false
+    end
+
+    test "handles numeric values in settings" do
+      room =
+        create_room(
+          settings: %{
+            square_footage: 1200,
+            ceiling_height_feet: 12,
+            windows: 4,
+            reformers: 8
+          }
+        )
+
+      assert room.settings["square_footage"] == 1200
+      assert room.settings["reformers"] == 8
+    end
+
+    test "handles arrays in settings" do
+      room =
+        create_room(
+          settings: %{
+            equipment_types: ["reformer", "chair", "cadillac"],
+            amenities: ["mirrors", "sound system", "props"]
+          }
+        )
+
+      assert "reformer" in room.settings["equipment_types"]
+      assert length(room.settings["amenities"]) == 3
+    end
+
+    test "handles nil values within settings map" do
+      room =
+        create_room(
+          settings: %{
+            notes: nil,
+            special_features: nil,
+            renovation_date: nil
+          }
+        )
+
+      assert room.settings["notes"] == nil
+    end
+  end
+
+  describe "room name edge cases" do
+    test "accepts single character name" do
+      studio = create_studio()
+
+      attrs = %{
+        name: "A",
+        capacity: 12,
+        studio_id: studio.id
+      }
+
+      assert {:ok, room} =
+               Room
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert room.name == "A"
+    end
+
+    test "accepts name with numbers and special characters" do
+      room = create_room(name: "Room #1 - Main Floor (North Wing)")
+      assert room.name == "Room #1 - Main Floor (North Wing)"
+    end
+
+    test "trims whitespace from room name" do
+      studio = create_studio()
+
+      attrs = %{
+        name: "  Trimmed Room Name  ",
+        capacity: 12,
+        studio_id: studio.id
+      }
+
+      assert {:ok, room} =
+               Room
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      # The trim? constraint should remove leading/trailing whitespace
+      assert room.name == "Trimmed Room Name"
+    end
+  end
+
+  describe "room query optimization" do
+    test "can filter by multiple criteria" do
+      studio = create_studio()
+
+      room1 = create_room(studio: studio, name: "Large Room", capacity: 20, active: true)
+      room2 = create_room(studio: studio, name: "Small Room", capacity: 8, active: true)
+      _room3 = create_room(studio: studio, name: "Inactive Large", capacity: 25, active: false)
+
+      large_active_rooms =
+        Room
+        |> Ash.Query.filter(studio_id == ^studio.id and capacity >= 15 and active == true)
+        |> Ash.read!(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      room_ids = Enum.map(large_active_rooms, & &1.id)
+      assert room1.id in room_ids
+      refute room2.id in room_ids
+    end
+
+    test "can count rooms by studio" do
+      studio1 = create_studio()
+      studio2 = create_studio()
+
+      create_room(studio: studio1)
+      create_room(studio: studio1)
+      create_room(studio: studio1)
+      create_room(studio: studio2)
+
+      studio1_rooms =
+        Room
+        |> Ash.Query.filter(studio_id == ^studio1.id)
+        |> Ash.read!(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert length(studio1_rooms) == 3
+    end
+  end
 end

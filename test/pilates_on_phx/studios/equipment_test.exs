@@ -807,11 +807,14 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
   describe "data validation edge cases" do
     test "handles unicode characters in equipment name" do
       studio = create_studio()
+      room = create_room(studio: studio)
 
       attrs = %{
         name: "Reformer José García 体育馆",
         equipment_type: "reformer",
-        studio_id: studio.id
+        portable: false,
+        studio_id: studio.id,
+        room_id: room.id
       }
 
       assert {:ok, equipment} =
@@ -824,11 +827,14 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
 
     test "handles special characters in equipment name" do
       studio = create_studio()
+      room = create_room(studio: studio)
 
       attrs = %{
         name: "Reformer #1 (Studio A)",
         equipment_type: "reformer",
-        studio_id: studio.id
+        portable: false,
+        studio_id: studio.id,
+        room_id: room.id
       }
 
       assert {:ok, equipment} =
@@ -962,6 +968,317 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
         |> Ash.read_one!(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
       assert found_studio.id == studio.id
+    end
+  end
+
+  describe "equipment type validation" do
+    test "accepts all standard equipment types" do
+      standard_types = ["reformer", "cadillac", "chair", "barrel", "mat", "prop"]
+
+      Enum.each(standard_types, fn type ->
+        equipment = create_equipment(equipment_type: type, name: "#{type} test")
+        assert equipment.equipment_type == type
+      end)
+    end
+
+    test "accepts custom equipment types" do
+      custom_types = ["springboard", "tower", "CoreAlign", "V2_Max"]
+
+      Enum.each(custom_types, fn type ->
+        equipment = create_equipment(equipment_type: type, name: "#{type} test")
+        assert equipment.equipment_type == type
+      end)
+    end
+
+    test "rejects empty equipment type" do
+      studio = create_studio()
+
+      attrs = %{
+        name: "No Type Equipment",
+        equipment_type: "",
+        studio_id: studio.id
+      }
+
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      changeset = error.changeset
+      assert changeset.valid? == false
+    end
+  end
+
+  describe "portable equipment workflow" do
+    test "portable equipment can be created without room" do
+      studio = create_studio()
+
+      attrs = %{
+        name: "Portable Mat Set",
+        equipment_type: "mat",
+        portable: true,
+        studio_id: studio.id,
+        room_id: nil
+      }
+
+      assert {:ok, equipment} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert equipment.portable == true
+      assert equipment.room_id == nil
+    end
+
+    test "can convert non-portable equipment to portable" do
+      room = create_room()
+      equipment = create_equipment(room: room, portable: false)
+
+      assert {:ok, updated} =
+               equipment
+               |> Ash.Changeset.for_update(:update, %{portable: true, room_id: nil},
+                 actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+               )
+               |> Ash.update(domain: Studios)
+
+      assert updated.portable == true
+      assert updated.room_id == nil
+    end
+
+    test "can convert portable equipment to non-portable with room assignment" do
+      studio = create_studio()
+      room = create_room(studio: studio)
+      equipment = create_equipment(studio: studio, portable: true, room: nil)
+
+      assert {:ok, updated} =
+               equipment
+               |> Ash.Changeset.for_update(:update, %{portable: false, room_id: room.id},
+                 actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+               )
+               |> Ash.update(domain: Studios)
+
+      assert updated.portable == false
+      assert updated.room_id == room.id
+    end
+  end
+
+  describe "equipment serial number tracking" do
+    test "accepts alphanumeric serial numbers" do
+      equipment = create_equipment(serial_number: "REF-2024-001")
+      assert equipment.serial_number == "REF-2024-001"
+    end
+
+    test "accepts serial numbers with special characters" do
+      equipment = create_equipment(serial_number: "SN#12345-A/B")
+      assert equipment.serial_number == "SN#12345-A/B"
+    end
+
+    test "allows multiple equipment with nil serial numbers" do
+      studio = create_studio()
+
+      equipment1 = create_equipment(studio: studio, serial_number: nil)
+      equipment2 = create_equipment(studio: studio, serial_number: nil)
+
+      assert equipment1.serial_number == nil
+      assert equipment2.serial_number == nil
+      assert equipment1.id != equipment2.id
+    end
+
+    test "allows updating serial number" do
+      equipment = create_equipment(serial_number: "OLD-123")
+
+      assert {:ok, updated} =
+               equipment
+               |> Ash.Changeset.for_update(:update, %{serial_number: "NEW-456"},
+                 actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+               )
+               |> Ash.update(domain: Studios)
+
+      assert updated.serial_number == "NEW-456"
+    end
+  end
+
+  describe "equipment maintenance notes" do
+    test "accepts nil maintenance notes" do
+      equipment = create_equipment(maintenance_notes: nil)
+      assert equipment.maintenance_notes == nil
+    end
+
+    test "accepts long maintenance notes within limit" do
+      long_notes = String.duplicate("Serviced on 2024-01-01. ", 150)
+      equipment = create_equipment(maintenance_notes: long_notes)
+
+      assert String.length(equipment.maintenance_notes) > 3000
+      assert String.length(equipment.maintenance_notes) <= 5000
+    end
+
+    test "accepts maintenance notes with dates and structured information" do
+      notes = """
+      Last Service: 2024-01-15
+      Next Service Due: 2024-07-15
+      Technician: John Smith
+      Notes: Replaced springs, lubricated moving parts
+      """
+
+      equipment = create_equipment(maintenance_notes: notes)
+      assert String.contains?(equipment.maintenance_notes, "2024-01-15")
+      assert String.contains?(equipment.maintenance_notes, "John Smith")
+    end
+
+    test "accepts unicode in maintenance notes" do
+      notes = "Serviced by José García - 维修记录"
+      equipment = create_equipment(maintenance_notes: notes)
+      assert equipment.maintenance_notes == notes
+    end
+  end
+
+  describe "equipment name validation" do
+    test "accepts single character name" do
+      studio = create_studio()
+      room = create_room(studio: studio)
+
+      attrs = %{
+        name: "A",
+        equipment_type: "reformer",
+        portable: false,
+        studio_id: studio.id,
+        room_id: room.id
+      }
+
+      assert {:ok, equipment} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert equipment.name == "A"
+    end
+
+    test "trims whitespace from equipment name" do
+      studio = create_studio()
+      room = create_room(studio: studio)
+
+      attrs = %{
+        name: "  Reformer #1  ",
+        equipment_type: "reformer",
+        portable: false,
+        studio_id: studio.id,
+        room_id: room.id
+      }
+
+      assert {:ok, equipment} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert equipment.name == "Reformer #1"
+    end
+
+    test "rejects empty name after trimming" do
+      studio = create_studio()
+
+      attrs = %{
+        name: "   ",
+        equipment_type: "reformer",
+        studio_id: studio.id
+      }
+
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      changeset = error.changeset
+      assert changeset.valid? == false
+    end
+  end
+
+  describe "equipment query optimization" do
+    test "can filter by multiple criteria" do
+      studio = create_studio()
+
+      eq1 = create_equipment(studio: studio, equipment_type: "reformer", active: true, portable: false)
+      eq2 = create_equipment(studio: studio, equipment_type: "mat", active: true, portable: true, room: nil)
+      _eq3 = create_equipment(studio: studio, equipment_type: "reformer", active: false, portable: false)
+
+      active_reformers =
+        Equipment
+        |> Ash.Query.filter(studio_id == ^studio.id and equipment_type == "reformer" and active == true)
+        |> Ash.read!(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      equipment_ids = Enum.map(active_reformers, & &1.id)
+      assert eq1.id in equipment_ids
+      refute eq2.id in equipment_ids
+    end
+
+    test "can count equipment by type" do
+      studio = create_studio()
+
+      create_equipment(studio: studio, equipment_type: "reformer")
+      create_equipment(studio: studio, equipment_type: "reformer")
+      create_equipment(studio: studio, equipment_type: "reformer")
+      create_equipment(studio: studio, equipment_type: "chair")
+
+      reformers =
+        Equipment
+        |> Ash.Query.filter(studio_id == ^studio.id and equipment_type == "reformer")
+        |> Ash.read!(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert length(reformers) == 3
+    end
+
+    test "can list all portable equipment" do
+      studio = create_studio()
+
+      portable1 = create_equipment(studio: studio, portable: true, room: nil)
+      portable2 = create_equipment(studio: studio, portable: true, room: nil)
+      _fixed = create_equipment(studio: studio, portable: false)
+
+      portable_equipment =
+        Equipment
+        |> Ash.Query.filter(studio_id == ^studio.id and portable == true)
+        |> Ash.read!(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      equipment_ids = Enum.map(portable_equipment, & &1.id)
+      assert portable1.id in equipment_ids
+      assert portable2.id in equipment_ids
+      assert length(portable_equipment) == 2
+    end
+  end
+
+  describe "equipment inventory management" do
+    test "tracks equipment across multiple rooms" do
+      studio = create_studio()
+      room1 = create_room(studio: studio, name: "Room 1")
+      room2 = create_room(studio: studio, name: "Room 2")
+      room3 = create_room(studio: studio, name: "Room 3")
+
+      create_equipment(studio: studio, room: room1, name: "R1-Reformer1")
+      create_equipment(studio: studio, room: room1, name: "R1-Reformer2")
+      create_equipment(studio: studio, room: room2, name: "R2-Reformer1")
+      create_equipment(studio: studio, room: room3, name: "R3-Chair1")
+
+      all_studio_equipment =
+        Equipment
+        |> Ash.Query.filter(studio_id == ^studio.id)
+        |> Ash.read!(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert length(all_studio_equipment) == 4
+    end
+
+    test "can track equipment count by room" do
+      studio = create_studio()
+      room = create_room(studio: studio)
+
+      create_equipment(studio: studio, room: room)
+      create_equipment(studio: studio, room: room)
+      create_equipment(studio: studio, room: room)
+
+      room_equipment =
+        Equipment
+        |> Ash.Query.filter(room_id == ^room.id)
+        |> Ash.read!(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert length(room_equipment) == 3
     end
   end
 end
