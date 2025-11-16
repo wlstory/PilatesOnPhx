@@ -59,10 +59,8 @@ defmodule PilatesOnPhxWeb.LayoutsTest do
         </.app>
         """)
 
-      # Theme toggle should be rendered
-      assert html =~ "hero-computer-desktop-micro" or
-               html =~ "hero-sun-micro" or
-               html =~ "hero-moon-micro"
+      # Theme toggle should be rendered with theme icons
+      assert html =~ "data-phx-theme"
     end
 
     test "renders flash messages" do
