@@ -12,7 +12,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
   """
 
   alias PilatesOnPhx.Accounts
-  alias PilatesOnPhx.Accounts.{User, Organization, Token, OrganizationMembership}
+  alias PilatesOnPhx.Accounts.{Organization, OrganizationMembership, Token, User}
 
   require Ash.Query
 

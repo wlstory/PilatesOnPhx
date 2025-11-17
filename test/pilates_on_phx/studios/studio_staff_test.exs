@@ -156,7 +156,10 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
     test "sets default permissions as empty list" do
       # Don't pass permissions at all to test the default
       studio = create_studio()
-      org = Ash.load!(studio, :organization, actor: PilatesOnPhx.StudiosFixtures.bypass_actor()).organization
+
+      org =
+        Ash.load!(studio, :organization, actor: PilatesOnPhx.StudiosFixtures.bypass_actor()).organization
+
       user = create_user(organization: org)
 
       attrs = %{
@@ -167,9 +170,9 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       }
 
       assert {:ok, staff} =
-        StudioStaff
-        |> Ash.Changeset.for_create(:assign, attrs)
-        |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+               StudioStaff
+               |> Ash.Changeset.for_create(:assign, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
       assert staff.permissions == []
     end
@@ -230,8 +233,8 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
 
       # Should be an error - either Invalid or Forbidden or database constraint error
       assert match?(%Ash.Error.Invalid{}, error) or
-             match?(%Ash.Error.Forbidden{}, error) or
-             match?(%Ecto.ConstraintError{}, error)
+               match?(%Ash.Error.Forbidden{}, error) or
+               match?(%Ecto.ConstraintError{}, error)
     end
   end
 
@@ -674,7 +677,8 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       user = create_user(organization: org)
 
       # Query should handle loading memberships dynamically
-      result = StudioStaff
+      result =
+        StudioStaff
         |> Ash.Query.filter(id == ^staff.id)
         |> Ash.read(domain: Studios, actor: user)
 
@@ -691,8 +695,9 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       staff = create_studio_staff()
 
       # User with no organization should not see any staff
-      assert {:ok, staff_list} = StudioStaff
-        |> Ash.read(domain: Studios, actor: user)
+      assert {:ok, staff_list} =
+               StudioStaff
+               |> Ash.read(domain: Studios, actor: user)
 
       refute Enum.any?(staff_list, fn s -> s.id == staff.id end)
     end
@@ -708,8 +713,9 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       staff1 = create_studio_staff(studio: studio1)
       staff2 = create_studio_staff(studio: studio2)
 
-      assert {:ok, staff_list} = StudioStaff
-        |> Ash.read(domain: Studios, actor: user)
+      assert {:ok, staff_list} =
+               StudioStaff
+               |> Ash.read(domain: Studios, actor: user)
 
       staff_ids = Enum.map(staff_list, & &1.id)
       assert staff1.id in staff_ids

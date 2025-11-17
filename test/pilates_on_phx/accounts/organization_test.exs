@@ -120,6 +120,28 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       assert org.settings == %{} or is_map(org.settings)
     end
 
+    test "allows deeply nested settings structure" do
+      attrs = %{
+        name: "Studio With Complex Settings",
+        settings: %{
+          level1: %{
+            level2: %{
+              level3: %{
+                deep_value: "test"
+              }
+            }
+          }
+        }
+      }
+
+      assert {:ok, org} =
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
+
+      assert org.settings["level1"]["level2"]["level3"]["deep_value"] == "test"
+    end
+
     test "allows custom settings JSON object" do
       attrs = %{
         name: "Studio With Settings",

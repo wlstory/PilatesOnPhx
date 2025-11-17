@@ -50,6 +50,22 @@ jobs:
         id: branch_name
         uses: tj-actions/branch-names@v8
 
+      - name: Verify Neon Configuration
+        if: ${{ github.event.action != 'closed' }}
+        run: |
+          if [ -z "${{ vars.NEON_PROJECT_ID }}" ]; then
+            echo "❌ ERROR: NEON_PROJECT_ID variable is not set!"
+            echo "Please set it in GitHub repo settings: Settings → Secrets and variables → Actions → Variables"
+            exit 1
+          fi
+          if [ -z "${{ secrets.NEON_API_KEY }}" ]; then
+            echo "❌ ERROR: NEON_API_KEY secret is not set!"
+            echo "Please set it in GitHub repo settings: Settings → Secrets and variables → Actions → Secrets"
+            exit 1
+          fi
+          echo "✅ Neon configuration variables are set"
+          echo "Project ID length: $(echo -n '${{ vars.NEON_PROJECT_ID }}' | wc -c)"
+
       - name: Get branch expiration date (2 weeks from now)
         if: ${{ github.event.action != 'closed' }}
         id: get_expiration_date
@@ -65,17 +81,29 @@ jobs:
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ env.EXPIRES_AT }}
 
-      - name: Debug Neon outputs
+      - name: Set Database URL
         if: ${{ github.event.action != 'closed' }}
+        id: set_db_url
         run: |
           echo "Checking Neon branch outputs..."
           echo "db_url length: $(echo -n '${{ steps.create_neon_branch.outputs.db_url }}' | wc -c)"
           echo "db_url_with_pooler length: $(echo -n '${{ steps.create_neon_branch.outputs.db_url_with_pooler }}' | wc -c)"
-          if [ -z "${{ steps.create_neon_branch.outputs.db_url_with_pooler }}" ]; then
-            echo "ERROR: Neon database URL is empty!"
+          
+          # Use pooler if available, otherwise fallback to direct connection
+          if [ -n "${{ steps.create_neon_branch.outputs.db_url_with_pooler }}" ]; then
+            echo "Using Neon pooler connection"
+            DB_URL="${{ steps.create_neon_branch.outputs.db_url_with_pooler }}"
+          elif [ -n "${{ steps.create_neon_branch.outputs.db_url }}" ]; then
+            echo "Using Neon direct connection (pooler not available)"
+            DB_URL="${{ steps.create_neon_branch.outputs.db_url }}"
+          else
+            echo "ERROR: No Neon database URL available!"
             exit 1
           fi
-          echo "✅ Neon database URL retrieved successfully"
+          
+          echo "::add-mask::$DB_URL"
+          echo "database_url=$DB_URL" >> $GITHUB_OUTPUT
+          echo "✅ Neon database URL configured successfully"
 
       - name: Install Fly CLI
         if: ${{ github.event.action != 'closed' }}
@@ -119,7 +147,7 @@ jobs:
         with:
           name: ${{ env.FLY_APP_NAME }}
           secrets: |
-            DATABASE_URL=${{ steps.create_neon_branch.outputs.db_url_with_pooler }}
+            DATABASE_URL=${{ steps.set_db_url.outputs.database_url }}
             SECRET_KEY_BASE=${{ steps.generate_secrets.outputs.SECRET_KEY }}
             TOKEN_SIGNING_SECRET=${{ steps.generate_secrets.outputs.SECRET_KEY }}
             PHX_HOST=${{ env.FLY_APP_NAME }}.fly.dev

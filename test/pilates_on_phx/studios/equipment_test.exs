@@ -167,9 +167,30 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
       assert equipment.serial_number == nil
     end
 
+    test "allows very long serial numbers" do
+      long_serial = String.duplicate("A", 100)
+      equipment = create_equipment(serial_number: long_serial)
+      assert equipment.serial_number == long_serial
+    end
+
     test "allows maintenance_notes to be nil" do
       equipment = create_equipment(maintenance_notes: nil)
       assert equipment.maintenance_notes == nil
+    end
+
+    test "allows very long maintenance notes with multiple paragraphs" do
+      long_notes = """
+      First service: 2024-01-01
+      Second service: 2024-02-01
+      Third service: 2024-03-01
+
+      Equipment has been performing well with no major issues.
+      Minor adjustments made to spring tension.
+      """
+
+      equipment = create_equipment(maintenance_notes: long_notes)
+      assert String.contains?(equipment.maintenance_notes, "First service")
+      assert String.contains?(equipment.maintenance_notes, "spring tension")
     end
 
     test "allows custom maintenance notes" do
@@ -562,7 +583,8 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
       user = create_user(organization: org)
 
       # Query should handle loading memberships dynamically
-      result = Equipment
+      result =
+        Equipment
         |> Ash.Query.filter(id == ^equipment.id)
         |> Ash.read(domain: Studios, actor: user)
 
@@ -579,8 +601,9 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
       equipment = create_equipment()
 
       # User with no organization should not see any equipment
-      assert {:ok, equipment_list} = Equipment
-        |> Ash.read(domain: Studios, actor: user)
+      assert {:ok, equipment_list} =
+               Equipment
+               |> Ash.read(domain: Studios, actor: user)
 
       refute Enum.any?(equipment_list, fn e -> e.id == equipment.id end)
     end
@@ -596,8 +619,9 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
       equipment1 = create_equipment(studio: studio1)
       equipment2 = create_equipment(studio: studio2)
 
-      assert {:ok, equipment_list} = Equipment
-        |> Ash.read(domain: Studios, actor: user)
+      assert {:ok, equipment_list} =
+               Equipment
+               |> Ash.read(domain: Studios, actor: user)
 
       equipment_ids = Enum.map(equipment_list, & &1.id)
       assert equipment1.id in equipment_ids
@@ -884,7 +908,8 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
         name: "Reformer José García 体育馆",
         equipment_type: "reformer",
         studio_id: studio.id,
-        room_id: room.id  # Non-portable equipment needs a room
+        # Non-portable equipment needs a room
+        room_id: room.id
       }
 
       assert {:ok, equipment} =
@@ -904,7 +929,8 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
         name: "Reformer #1 (Studio A)",
         equipment_type: "reformer",
         studio_id: studio.id,
-        room_id: room.id  # Non-portable equipment needs a room
+        # Non-portable equipment needs a room
+        room_id: room.id
       }
 
       assert {:ok, equipment} =

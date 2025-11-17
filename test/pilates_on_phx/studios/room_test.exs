@@ -174,6 +174,28 @@ defmodule PilatesOnPhx.Studios.RoomTest do
       assert room.settings == %{} or is_map(room.settings)
     end
 
+    test "allows nested settings with arrays and complex types" do
+      room =
+        create_room(
+          settings: %{
+            equipment_list: ["reformer", "tower", "chair"],
+            features: %{
+              lighting: "natural",
+              flooring: "hardwood"
+            },
+            dimensions: %{
+              length: 30,
+              width: 20,
+              height: 12
+            }
+          }
+        )
+
+      assert room.settings["equipment_list"] == ["reformer", "tower", "chair"]
+      assert room.settings["features"]["lighting"] == "natural"
+      assert room.settings["dimensions"]["length"] == 30
+    end
+
     test "allows custom settings JSON object" do
       room =
         create_room(
@@ -513,7 +535,8 @@ defmodule PilatesOnPhx.Studios.RoomTest do
       user = create_user(organization: org)
 
       # Query should handle loading memberships dynamically
-      result = Room
+      result =
+        Room
         |> Ash.Query.filter(id == ^room.id)
         |> Ash.read(domain: Studios, actor: user)
 
@@ -530,8 +553,9 @@ defmodule PilatesOnPhx.Studios.RoomTest do
       room = create_room()
 
       # User with no organization should not see any rooms
-      assert {:ok, rooms} = Room
-        |> Ash.read(domain: Studios, actor: user)
+      assert {:ok, rooms} =
+               Room
+               |> Ash.read(domain: Studios, actor: user)
 
       refute Enum.any?(rooms, fn r -> r.id == room.id end)
     end
@@ -547,8 +571,9 @@ defmodule PilatesOnPhx.Studios.RoomTest do
       room1 = create_room(studio: studio1)
       room2 = create_room(studio: studio2)
 
-      assert {:ok, rooms} = Room
-        |> Ash.read(domain: Studios, actor: user)
+      assert {:ok, rooms} =
+               Room
+               |> Ash.read(domain: Studios, actor: user)
 
       room_ids = Enum.map(rooms, & &1.id)
       assert room1.id in room_ids

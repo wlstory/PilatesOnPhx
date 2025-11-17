@@ -224,6 +224,25 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       assert Enum.any?(changeset.errors, fn error -> error.field == :timezone end)
     end
 
+    test "uses default timezone when not explicitly provided" do
+      org = create_organization()
+
+      # Don't include timezone in attributes - should use default
+      attrs = %{
+        name: "Studio With Default Timezone",
+        address: "123 Main St",
+        organization_id: org.id
+      }
+
+      assert {:ok, studio} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      # Should use America/New_York default
+      assert studio.timezone == "America/New_York"
+    end
+
     test "accepts various valid IANA timezones" do
       org = create_organization()
 
@@ -652,6 +671,11 @@ defmodule PilatesOnPhx.Studios.StudioTest do
   end
 
   describe "studio settings and configuration" do
+    test "accepts empty settings map" do
+      studio = create_studio(settings: %{})
+      assert studio.settings == %{}
+    end
+
     test "stores wifi and parking information" do
       studio =
         create_studio(
@@ -905,7 +929,8 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       user = create_user(organization: org)
 
       # Query should handle loading memberships dynamically
-      result = Studio
+      result =
+        Studio
         |> Ash.Query.filter(id == ^studio.id)
         |> Ash.read(domain: Studios, actor: user)
 
@@ -922,8 +947,9 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       studio = create_studio()
 
       # User with no organization should not see any studios
-      assert {:ok, studios} = Studio
-        |> Ash.read(domain: Studios, actor: user)
+      assert {:ok, studios} =
+               Studio
+               |> Ash.read(domain: Studios, actor: user)
 
       refute Enum.any?(studios, fn s -> s.id == studio.id end)
     end
@@ -936,8 +962,9 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       studio1 = create_studio(organization: org1)
       studio2 = create_studio(organization: org2)
 
-      assert {:ok, studios} = Studio
-        |> Ash.read(domain: Studios, actor: user)
+      assert {:ok, studios} =
+               Studio
+               |> Ash.read(domain: Studios, actor: user)
 
       studio_ids = Enum.map(studios, & &1.id)
       assert studio1.id in studio_ids

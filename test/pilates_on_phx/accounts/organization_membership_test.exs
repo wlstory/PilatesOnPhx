@@ -2,7 +2,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
   use PilatesOnPhx.DataCase, async: true
 
   alias PilatesOnPhx.Accounts
-  alias PilatesOnPhx.Accounts.{OrganizationMembership, User, Organization}
+  alias PilatesOnPhx.Accounts.{Organization, OrganizationMembership, User}
   import PilatesOnPhx.AccountsFixtures
 
   require Ash.Query
@@ -1025,6 +1025,29 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       # Should still work - preparation loads memberships via Ash.load
       org_ids = Enum.map(visible_memberships, & &1.organization_id) |> Enum.uniq()
       assert org.id in org_ids
+    end
+
+    test "handles actor with unexpected membership value gracefully" do
+      org = create_organization()
+      user = create_user(organization: org)
+
+      # Create a mock actor struct with unexpected memberships value
+      # This tests the defensive catch-all pattern (line 126: _ -> [])
+      mock_actor = %{
+        id: user.id,
+        memberships: "unexpected_string_value",
+        bypass_strict_access: false
+      }
+
+      # Should handle gracefully by treating as empty list
+      # This triggers the defensive error path
+      visible_memberships =
+        OrganizationMembership
+        |> Ash.read!(domain: Accounts, actor: mock_actor)
+
+      # With unexpected memberships type, preparation returns empty actor_org_ids
+      # which filters to return no results
+      assert visible_memberships == []
     end
   end
 
