@@ -108,6 +108,21 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       assert org.active == true
     end
 
+    test "allows creating organization with nil timezone" do
+      attrs = %{
+        name: "Studio No Timezone",
+        timezone: nil
+      }
+
+      assert {:ok, org} =
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
+
+      # nil timezone should be accepted (validation passes when timezone is nil)
+      assert org.name == "Studio No Timezone"
+    end
+
     test "initializes empty settings map by default" do
       attrs = %{
         name: "Studio Default Settings"

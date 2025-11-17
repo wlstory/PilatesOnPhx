@@ -95,24 +95,36 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership do
       actor = Map.get(context, :actor)
 
       if actor && !Map.get(actor, :bypass_strict_access, false) do
-        # Get actor's organization IDs
+        # Get actor's organization IDs from memberships
         actor_org_ids =
-          case Ash.load(actor, :memberships, domain: PilatesOnPhx.Accounts) do
-            {:ok, loaded_actor} ->
-              Enum.map(loaded_actor.memberships, & &1.organization_id)
-
-            {:error, _} ->
-              # If load fails, try to use already loaded memberships
-              case Map.get(actor, :memberships) do
-                %Ash.NotLoaded{} ->
-                  []
-
-                memberships when is_list(memberships) ->
-                  Enum.map(memberships, & &1.organization_id)
+          case Map.get(actor, :memberships) do
+            %Ash.NotLoaded{} ->
+              # Memberships not loaded, try to load them
+              # Use authorize?: false to prevent circular authorization dependency
+              case Ash.load(actor, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false) do
+                {:ok, loaded_actor} ->
+                  Enum.map(loaded_actor.memberships || [], & &1.organization_id)
 
                 _ ->
                   []
               end
+
+            nil ->
+              # Try to load memberships
+              # Use authorize?: false to prevent circular authorization dependency
+              case Ash.load(actor, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false) do
+                {:ok, loaded_actor} ->
+                  Enum.map(loaded_actor.memberships || [], & &1.organization_id)
+
+                _ ->
+                  []
+              end
+
+            memberships when is_list(memberships) ->
+              Enum.map(memberships, & &1.organization_id)
+
+            _ ->
+              []
           end
 
         # Filter to memberships in actor's organizations

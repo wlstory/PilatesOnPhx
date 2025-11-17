@@ -160,6 +160,24 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       assert studio.timezone == "America/New_York"
     end
 
+    test "allows creating studio with nil timezone" do
+      org = create_organization()
+
+      attrs = %{
+        name: "Studio No Timezone",
+        organization_id: org.id,
+        timezone: nil
+      }
+
+      assert {:ok, studio} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      # nil timezone should be accepted (validation passes when timezone is nil)
+      assert studio.name == "Studio No Timezone"
+    end
+
     test "sets default active status to true if not provided" do
       studio = create_studio()
       assert studio.active == true
