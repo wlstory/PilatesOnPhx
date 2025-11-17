@@ -2,7 +2,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
   use PilatesOnPhx.DataCase, async: true
 
   alias PilatesOnPhx.Accounts
-  alias PilatesOnPhx.Accounts.{OrganizationMembership, User, Organization}
+  alias PilatesOnPhx.Accounts.{Organization, OrganizationMembership, User}
   import PilatesOnPhx.AccountsFixtures
 
   require Ash.Query

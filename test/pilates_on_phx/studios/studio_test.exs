@@ -1157,7 +1157,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
         {:ok, studio} =
           Studio
           |> Ash.Changeset.for_create(:create, attrs)
-          |> Ash.create(domain: Studios, actor: bypass_actor())
+          |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
         assert studio.timezone == tz
       end)
@@ -1195,7 +1195,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
         {:ok, studio} =
           Studio
           |> Ash.Changeset.for_create(:create, attrs)
-          |> Ash.create(domain: Studios, actor: bypass_actor())
+          |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
         assert studio.timezone == tz
       end)
@@ -1239,7 +1239,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
         {:ok, studio} =
           Studio
           |> Ash.Changeset.for_create(:create, attrs)
-          |> Ash.create(domain: Studios, actor: bypass_actor())
+          |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
         assert studio.timezone == tz
       end)
@@ -1260,7 +1260,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       assert {:ok, studio} =
                Studio
                |> Ash.Changeset.for_create(:create, attrs)
-               |> Ash.create(domain: Studios, actor: bypass_actor())
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
       assert studio.operating_hours == %{}
     end
@@ -1282,7 +1282,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       assert {:ok, studio} =
                Studio
                |> Ash.Changeset.for_create(:create, attrs)
-               |> Ash.create(domain: Studios, actor: bypass_actor())
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
       assert studio.operating_hours["mon"] == "9:00-17:00"
       assert studio.operating_hours["wed"] == "9:00-17:00"
@@ -1306,7 +1306,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       assert {:ok, studio} =
                Studio
                |> Ash.Changeset.for_create(:create, attrs)
-               |> Ash.create(domain: Studios, actor: bypass_actor())
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
       assert studio.operating_hours["sun"] == "closed"
     end
@@ -1326,7 +1326,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       assert {:ok, studio} =
                Studio
                |> Ash.Changeset.for_create(:create, attrs)
-               |> Ash.create(domain: Studios, actor: bypass_actor())
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
       assert studio.max_capacity == 1
     end
@@ -1344,7 +1344,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       assert {:ok, studio} =
                Studio
                |> Ash.Changeset.for_create(:create, attrs)
-               |> Ash.create(domain: Studios, actor: bypass_actor())
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
       assert studio.max_capacity == 500
     end
@@ -1362,7 +1362,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       assert {:error, %Ash.Error.Invalid{} = error} =
                Studio
                |> Ash.Changeset.for_create(:create, attrs)
-               |> Ash.create(domain: Studios, actor: bypass_actor())
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
       changeset = error.changeset
       assert changeset.valid? == false
@@ -1382,7 +1382,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       assert {:error, %Ash.Error.Invalid{} = error} =
                Studio
                |> Ash.Changeset.for_create(:create, attrs)
-               |> Ash.create(domain: Studios, actor: bypass_actor())
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
       changeset = error.changeset
       assert changeset.valid? == false
@@ -1401,7 +1401,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       assert {:ok, studio} =
                Studio
                |> Ash.Changeset.for_create(:create, attrs)
-               |> Ash.create(domain: Studios, actor: bypass_actor())
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
       assert studio.address == "123 Rue de la Paix, 75002 Paris, France - 平和通り123号"
     end
