@@ -1369,6 +1369,82 @@ defmodule PilatesOnPhx.Studios.StudioTest do
     end
   end
 
+  describe "preparation filter - multi-tenant isolation for studios" do
+    test "actor with loaded memberships sees only studios in their organizations" do
+      org1 = create_organization()
+      org2 = create_organization()
+      org3 = create_organization()
+
+      # Create user in org1 and org2
+      user = create_user(organization: org1)
+      create_organization_membership(user: user, organization: org2, role: :admin)
+
+      # Create studios in all three orgs
+      studio1 = create_studio(organization: org1, name: "Org1 Studio")
+      studio2 = create_studio(organization: org2, name: "Org2 Studio")
+      studio3 = create_studio(organization: org3, name: "Org3 Studio")
+
+      # Load memberships for the user
+      user = Ash.load!(user, :memberships, domain: PilatesOnPhx.Accounts, actor: bypass_actor())
+
+      # Query with user as actor - preparation should filter to user's orgs
+      visible_studios = Studio |> Ash.read!(domain: Studios, actor: user)
+
+      studio_ids = Enum.map(visible_studios, & &1.id)
+      # Should see studios from org1 and org2 only
+      assert studio1.id in studio_ids
+      assert studio2.id in studio_ids
+      refute studio3.id in studio_ids
+    end
+
+    test "actor with no organizations sees no studios" do
+      org = create_organization()
+      create_studio(organization: org)
+      create_studio(organization: org)
+
+      # Create user not in any organization
+      orphan_user =
+        PilatesOnPhx.Accounts.User
+        |> Ash.Changeset.for_create(:register, %{
+          email: "orphan@example.com",
+          password: "securepass123",
+          name: "Orphan User",
+          role: :client
+        })
+        |> Ash.create!(domain: PilatesOnPhx.Accounts)
+
+      # Load memberships to get empty list
+      orphan_user =
+        Ash.load!(orphan_user, :memberships,
+          domain: PilatesOnPhx.Accounts,
+          actor: bypass_actor()
+        )
+
+      # Query should return no studios due to empty actor_org_ids
+      visible_studios = Studio |> Ash.read!(domain: Studios, actor: orphan_user)
+
+      assert visible_studios == []
+    end
+
+    test "handles actor with nil memberships (triggers Ash.load)" do
+      org = create_organization()
+      user = create_user(organization: org)
+      studio = create_studio(organization: org)
+
+      # Get user without memberships loaded
+      fresh_user =
+        PilatesOnPhx.Accounts.User
+        |> Ash.Query.filter(id == ^user.id)
+        |> Ash.read_one!(domain: PilatesOnPhx.Accounts, actor: bypass_actor())
+
+      # Query with fresh_user - preparation will load memberships
+      visible_studios = Studio |> Ash.read!(domain: Studios, actor: fresh_user)
+
+      studio_ids = Enum.map(visible_studios, & &1.id)
+      assert studio.id in studio_ids
+    end
+  end
+
   describe "address validation edge cases" do
     test "validates address is not empty string" do
       org = create_organization()
