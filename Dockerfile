@@ -55,10 +55,7 @@ COPY lib lib
 # Compile the release
 RUN mix compile
 
-# Copy pre-downloaded tailwind binary to avoid network issues during the mix task
-COPY _build/tailwind-linux-x64 _build/tailwind-linux-x64
-
-# compile assets
+# compile assets (tailwind and esbuild will download automatically if needed)
 RUN mix assets.deploy
 
 # Changes to config/runtime.exs don't require recompiling the code
