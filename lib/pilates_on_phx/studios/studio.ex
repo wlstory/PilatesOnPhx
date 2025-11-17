@@ -261,7 +261,7 @@ defmodule PilatesOnPhx.Studios.Studio do
           case Map.get(actor, :memberships) do
             nil ->
               # Try to load memberships
-              case Ash.load(actor, :memberships) do
+              case Ash.load(actor, :memberships, domain: PilatesOnPhx.Accounts) do
                 {:ok, loaded_actor} ->
                   Enum.map(loaded_actor.memberships || [], & &1.organization_id)
 
