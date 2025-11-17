@@ -1136,7 +1136,9 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
 
     test "can remove permissions from existing staff" do
       staff =
-        create_studio_staff(permissions: ["teach", "view_schedule", "manage_equipment", "view_reports"])
+        create_studio_staff(
+          permissions: ["teach", "view_schedule", "manage_equipment", "view_reports"]
+        )
 
       reduced_permissions = ["teach", "view_schedule"]
 

@@ -1154,10 +1154,10 @@ defmodule PilatesOnPhx.Studios.StudioTest do
           organization_id: org.id
         }
 
-        assert {:ok, studio} =
-                 Studio
-                 |> Ash.Changeset.for_create(:create, attrs)
-                 |> Ash.create(domain: Studios, actor: bypass_actor())
+        {:ok, studio} =
+          Studio
+          |> Ash.Changeset.for_create(:create, attrs)
+          |> Ash.create(domain: Studios, actor: bypass_actor())
 
         assert studio.timezone == tz
       end)
@@ -1192,10 +1192,10 @@ defmodule PilatesOnPhx.Studios.StudioTest do
           organization_id: org.id
         }
 
-        assert {:ok, studio} =
-                 Studio
-                 |> Ash.Changeset.for_create(:create, attrs)
-                 |> Ash.create(domain: Studios, actor: bypass_actor())
+        {:ok, studio} =
+          Studio
+          |> Ash.Changeset.for_create(:create, attrs)
+          |> Ash.create(domain: Studios, actor: bypass_actor())
 
         assert studio.timezone == tz
       end)
@@ -1236,10 +1236,10 @@ defmodule PilatesOnPhx.Studios.StudioTest do
           organization_id: org.id
         }
 
-        assert {:ok, studio} =
-                 Studio
-                 |> Ash.Changeset.for_create(:create, attrs)
-                 |> Ash.create(domain: Studios, actor: bypass_actor())
+        {:ok, studio} =
+          Studio
+          |> Ash.Changeset.for_create(:create, attrs)
+          |> Ash.create(domain: Studios, actor: bypass_actor())
 
         assert studio.timezone == tz
       end)

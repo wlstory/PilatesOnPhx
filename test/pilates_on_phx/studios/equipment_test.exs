@@ -1196,13 +1196,36 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
     test "can filter by multiple criteria" do
       studio = create_studio()
 
-      eq1 = create_equipment(studio: studio, equipment_type: "reformer", active: true, portable: false)
-      eq2 = create_equipment(studio: studio, equipment_type: "mat", active: true, portable: true, room: nil)
-      _eq3 = create_equipment(studio: studio, equipment_type: "reformer", active: false, portable: false)
+      eq1 =
+        create_equipment(
+          studio: studio,
+          equipment_type: "reformer",
+          active: true,
+          portable: false
+        )
+
+      eq2 =
+        create_equipment(
+          studio: studio,
+          equipment_type: "mat",
+          active: true,
+          portable: true,
+          room: nil
+        )
+
+      _eq3 =
+        create_equipment(
+          studio: studio,
+          equipment_type: "reformer",
+          active: false,
+          portable: false
+        )
 
       active_reformers =
         Equipment
-        |> Ash.Query.filter(studio_id == ^studio.id and equipment_type == "reformer" and active == true)
+        |> Ash.Query.filter(
+          studio_id == ^studio.id and equipment_type == "reformer" and active == true
+        )
         |> Ash.read!(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
       equipment_ids = Enum.map(active_reformers, & &1.id)
