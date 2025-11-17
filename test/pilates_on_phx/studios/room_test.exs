@@ -1127,7 +1127,11 @@ defmodule PilatesOnPhx.Studios.RoomTest do
       room3 = create_room(studio: studio3, name: "Org3 Room")
 
       # Load memberships for the user
-      user = Ash.load!(user, :memberships, domain: PilatesOnPhx.Accounts, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+      user =
+        Ash.load!(user, :memberships,
+          domain: PilatesOnPhx.Accounts,
+          actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+        )
 
       # Query with user as actor - preparation should filter to user's orgs
       visible_rooms = Room |> Ash.read!(domain: Studios, actor: user)
@@ -1179,7 +1183,10 @@ defmodule PilatesOnPhx.Studios.RoomTest do
       fresh_user =
         PilatesOnPhx.Accounts.User
         |> Ash.Query.filter(id == ^user.id)
-        |> Ash.read_one!(domain: PilatesOnPhx.Accounts, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+        |> Ash.read_one!(
+          domain: PilatesOnPhx.Accounts,
+          actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+        )
 
       # Verify memberships are not loaded yet
       assert match?(%Ash.NotLoaded{}, fresh_user.memberships) or is_nil(fresh_user.memberships)
