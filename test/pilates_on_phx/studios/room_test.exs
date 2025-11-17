@@ -104,7 +104,7 @@ defmodule PilatesOnPhx.Studios.RoomTest do
       assert Enum.any?(changeset.errors, fn error -> error.field == :studio_id end)
     end
 
-    test "requires capacity" do
+    test "uses default capacity when not provided" do
       studio = create_studio()
 
       attrs = %{
@@ -112,14 +112,13 @@ defmodule PilatesOnPhx.Studios.RoomTest do
         studio_id: studio.id
       }
 
-      assert {:error, %Ash.Error.Invalid{} = error} =
+      assert {:ok, room} =
                Room
                |> Ash.Changeset.for_create(:create, attrs)
                |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
-      changeset = error.changeset
-      assert changeset.valid? == false
-      assert Enum.any?(changeset.errors, fn error -> error.field == :capacity end)
+      # Default capacity should be 12
+      assert room.capacity == 12
     end
 
     test "validates capacity is positive" do

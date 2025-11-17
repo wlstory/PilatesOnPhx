@@ -835,10 +835,12 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
     end
 
     test "handles long notes" do
-      long_notes = String.duplicate("Very detailed notes. ", 100)
+      # Notes have max_length of 2000, so create notes under that limit
+      long_notes = String.duplicate("Very detailed notes. ", 90)
       staff = create_studio_staff(notes: long_notes)
 
       assert String.length(staff.notes) > 1000
+      assert String.length(staff.notes) <= 2000
     end
 
     test "handles empty permissions list" do
