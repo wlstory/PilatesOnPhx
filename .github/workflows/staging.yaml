@@ -15,7 +15,7 @@ on:
 env:
   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
   FLY_REGION: dfw
-  FLY_ORG: pilatesonphx  # Update this to your Fly.io organization
+  FLY_ORG: pilates_collective
   FLY_APP_NAME: pr-${{ github.event.number }}
 
 permissions:
