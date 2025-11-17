@@ -289,6 +289,24 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
       assert updated.room_id == nil
     end
 
+    test "validates converting portable to non-portable requires room assignment" do
+      # Start with portable equipment (no room)
+      equipment = create_equipment(portable: true, room: nil)
+
+      # Try to make it non-portable without assigning a room - should fail
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               equipment
+               |> Ash.Changeset.for_update(:update, %{portable: false},
+                 actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+               )
+               |> Ash.update(domain: Studios)
+
+      # Verify the validation error is about room_id
+      changeset = error.changeset
+      assert changeset.valid? == false
+      assert Enum.any?(changeset.errors, fn err -> err.field == :room_id end)
+    end
+
     test "can activate inactive equipment" do
       equipment = create_equipment(active: false)
 

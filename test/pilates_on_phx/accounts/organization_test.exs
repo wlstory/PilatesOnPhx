@@ -79,22 +79,6 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       assert changeset.valid? == false
     end
 
-    test "sets default timezone if not provided" do
-      attrs = %{
-        name: "Studio Without Timezone",
-        active: true
-      }
-
-      assert {:ok, org} =
-               Organization
-               |> Ash.Changeset.for_create(:create, attrs)
-               |> Ash.create(domain: Accounts)
-
-      # Should have a default timezone (e.g., "UTC" or "America/New_York")
-      assert org.timezone != nil
-      assert is_binary(org.timezone)
-    end
-
     test "sets default active status to true if not provided" do
       attrs = %{
         name: "Studio Default Active"
@@ -108,10 +92,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       assert org.active == true
     end
 
-    test "allows creating organization with nil timezone" do
+    test "uses default timezone when not provided" do
       attrs = %{
-        name: "Studio No Timezone",
-        timezone: nil
+        name: "Studio Default Timezone"
       }
 
       assert {:ok, org} =
@@ -119,8 +102,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
                |> Ash.Changeset.for_create(:create, attrs)
                |> Ash.create(domain: Accounts)
 
-      # nil timezone should be accepted (validation passes when timezone is nil)
-      assert org.name == "Studio No Timezone"
+      # Should use the default timezone
+      assert org.timezone == "America/New_York"
+      assert org.name == "Studio Default Timezone"
     end
 
     test "initializes empty settings map by default" do
