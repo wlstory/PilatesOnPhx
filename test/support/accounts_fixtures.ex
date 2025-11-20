@@ -109,7 +109,11 @@ defmodule PilatesOnPhx.AccountsFixtures do
       |> Ash.create!(domain: Accounts, actor: bypass_actor())
 
     # Create organization membership with appropriate role
-    create_organization_membership(user: user, organization: organization, role: organization_role)
+    create_organization_membership(
+      user: user,
+      organization: organization,
+      role: organization_role
+    )
 
     # Reload user with memberships and organizations for policy checks
     User
