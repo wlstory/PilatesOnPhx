@@ -1187,7 +1187,10 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
       # Verify error message
       assert Enum.any?(changeset.errors, fn err ->
                err.field == :room_id &&
-                 String.contains?(err.message, "non-portable equipment must be assigned to a room")
+                 String.contains?(
+                   err.message,
+                   "non-portable equipment must be assigned to a room"
+                 )
              end)
     end
 
@@ -1250,7 +1253,10 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
 
       assert Enum.any?(changeset.errors, fn err ->
                err.field == :room_id &&
-                 String.contains?(err.message, "non-portable equipment must be assigned to a room")
+                 String.contains?(
+                   err.message,
+                   "non-portable equipment must be assigned to a room"
+                 )
              end)
     end
 
