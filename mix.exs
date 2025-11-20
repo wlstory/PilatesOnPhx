@@ -14,25 +14,11 @@ defmodule PilatesOnPhx.MixProject do
       listeners: listeners(Mix.env()),
       consolidate_protocols: Mix.env() != :dev,
       test_coverage: [
-        # Threshold set to 77% based on comprehensive business logic coverage analysis.
+        # Threshold set to 85% to ensure comprehensive business logic coverage.
         #
-        # BUSINESS LOGIC COVERAGE: ~85-90% (all testable business logic is covered)
-        #
-        # The remaining ~23% uncovered code consists of:
-        # 1. Defensive error handlers in preparation blocks (Ash.load failures) - ~15%
-        #    - Lines that catch internal Ash framework failures
-        #    - Cannot be tested without mocking Ash internals (violates testing principles)
-        # 2. Unreachable type-safety guards - ~5%
-        #    - `nil ->` paths where `allow_nil? false` prevents nil values
-        #    - Example: Studio timezone validation line 135
-        # 3. Framework-level error recovery paths - ~3%
-        #    - Authentication block initialization
-        #    - Token signing configuration errors
-        #    - Framework setup paths
-        #
-        # Per project guidelines: Test business logic, NOT framework features.
-        # Actual business logic coverage is 85-90% when excluding defensive framework code.
-        summary: [threshold: 77],
+        # Coverage targets business logic validation, authorization, and domain rules.
+        # Excludes framework features that should not be tested (per CLAUDE.md guidelines).
+        summary: [threshold: 85],
         ignore_modules: [
           # Ignore all Inspect modules
           ~r/^Inspect\./,

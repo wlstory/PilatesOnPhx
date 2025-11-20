@@ -1035,9 +1035,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
                |> Ash.read_one(domain: Studios, actor: user1)
     end
 
-    @tag :skip
     test "regular members cannot update studios" do
-      # TODO: Implement role-based authorization (owner/admin only)
       org = create_organization()
       member = create_user(organization: org, role: :client)
       studio = create_studio(organization: org)
@@ -1048,16 +1046,80 @@ defmodule PilatesOnPhx.Studios.StudioTest do
                |> Ash.update(domain: Studios)
     end
 
-    @tag :skip
     test "instructors cannot deactivate studios" do
-      # TODO: Implement role-based authorization (owner/admin only)
       org = create_organization()
-      instructor = create_user(organization: org, role: :instructor)
+      # Create instructor member
+      instructor = create_user(organization: org, role: :client)
       studio = create_studio(organization: org)
 
       assert {:error, %Ash.Error.Forbidden{}} =
                studio
                |> Ash.Changeset.for_update(:deactivate, %{}, actor: instructor)
+               |> Ash.update(domain: Studios)
+    end
+
+    test "non-owners cannot create studios" do
+      org = create_organization()
+      member = create_user(organization: org, role: :client)
+
+      attrs = %{
+        name: "Unauthorized Studio",
+        address: "123 Hack St",
+        organization_id: org.id
+      }
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs, actor: member)
+               |> Ash.create(domain: Studios)
+    end
+
+    test "non-owners cannot destroy studios" do
+      org = create_organization()
+      member = create_user(organization: org, role: :client)
+      studio = create_studio(organization: org)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Ash.destroy(studio, domain: Studios, actor: member)
+    end
+
+    test "users without actor cannot read studios" do
+      _studio = create_studio()
+
+      # Query without actor should return error or empty
+      assert {:ok, []} = Studio |> Ash.read(domain: Studios, actor: nil)
+    end
+
+    test "create fails when trying to create studio for different organization" do
+      org1 = create_organization(name: "Org 1")
+      org2 = create_organization(name: "Org 2")
+
+      owner1 = create_user(organization: org1, role: :owner)
+
+      # Owner of org1 tries to create studio in org2
+      attrs = %{
+        name: "Cross-Org Studio",
+        address: "123 Main St",
+        organization_id: org2.id
+      }
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs, actor: owner1)
+               |> Ash.create(domain: Studios)
+    end
+
+    test "update fails when actor is not owner of studio's organization" do
+      org1 = create_organization(name: "Org 1")
+      org2 = create_organization(name: "Org 2")
+
+      owner2 = create_user(organization: org2, role: :owner)
+      studio1 = create_studio(organization: org1)
+
+      # Owner of org2 tries to update studio in org1
+      assert {:error, %Ash.Error.Forbidden{}} =
+               studio1
+               |> Ash.Changeset.for_update(:update, %{name: "Hacked"}, actor: owner2)
                |> Ash.update(domain: Studios)
     end
   end

@@ -884,9 +884,7 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
                |> Ash.read_one(domain: Studios, actor: user1)
     end
 
-    @tag :skip
     test "regular members cannot update equipment" do
-      # TODO: Implement role-based authorization (owner/admin only)
       org = create_organization()
       member = create_user(organization: org, role: :client)
       studio = create_studio(organization: org)
@@ -895,6 +893,68 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
       assert {:error, %Ash.Error.Forbidden{}} =
                equipment
                |> Ash.Changeset.for_update(:update, %{name: "Unauthorized Update"}, actor: member)
+               |> Ash.update(domain: Studios)
+    end
+
+    test "regular members cannot create equipment" do
+      org = create_organization()
+      member = create_user(organization: org, role: :client)
+      studio = create_studio(organization: org)
+
+      attrs = %{
+        name: "Unauthorized Equipment",
+        equipment_type: "reformer",
+        portable: true,
+        studio_id: studio.id
+      }
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, attrs, actor: member)
+               |> Ash.create(domain: Studios)
+    end
+
+    test "regular members cannot destroy equipment" do
+      org = create_organization()
+      member = create_user(organization: org, role: :client)
+      studio = create_studio(organization: org)
+      equipment = create_equipment(studio: studio)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Ash.destroy(equipment, domain: Studios, actor: member)
+    end
+
+    test "cross-organization owners cannot create equipment" do
+      org1 = create_organization(name: "Org 1")
+      org2 = create_organization(name: "Org 2")
+
+      owner2 = create_user(organization: org2, role: :owner)
+      studio1 = create_studio(organization: org1)
+
+      attrs = %{
+        name: "Cross-Org Equipment",
+        equipment_type: "mat",
+        portable: true,
+        studio_id: studio1.id
+      }
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, attrs, actor: owner2)
+               |> Ash.create(domain: Studios)
+    end
+
+    test "cross-organization owners cannot update equipment" do
+      org1 = create_organization(name: "Org 1")
+      org2 = create_organization(name: "Org 2")
+
+      owner2 = create_user(organization: org2, role: :owner)
+      studio1 = create_studio(organization: org1)
+      equipment1 = create_equipment(studio: studio1)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               equipment1
+               |> Ash.Changeset.for_update(:update, %{name: "Hacked"}, actor: owner2)
                |> Ash.update(domain: Studios)
     end
   end
@@ -1428,7 +1488,7 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
       PilatesOnPhx.AccountsFixtures.create_organization_membership(
         organization: org2,
         user: user,
-        role: :member
+        role: :client
       )
 
       studio1 = create_studio(organization: org1)

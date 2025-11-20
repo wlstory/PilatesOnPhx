@@ -894,9 +894,7 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
                |> Ash.read_one(domain: Studios, actor: user1)
     end
 
-    @tag :skip
     test "regular members cannot assign staff" do
-      # TODO: Implement role-based authorization (owner/admin only)
       org = create_organization()
       member = create_user(organization: org, role: :client)
       studio = create_studio(organization: org)
@@ -911,14 +909,12 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       assert {:error, %Ash.Error.Forbidden{}} =
                StudioStaff
                |> Ash.Changeset.for_create(:assign, attrs, actor: member)
-               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+               |> Ash.create(domain: Studios)
     end
 
-    @tag :skip
     test "instructors cannot deactivate other staff" do
-      # TODO: Implement role-based authorization (owner/admin only)
       org = create_organization()
-      instructor = create_user(organization: org, role: :instructor)
+      instructor = create_user(organization: org, role: :client)
       studio = create_studio(organization: org)
       staff = create_studio_staff(studio: studio)
 
@@ -926,6 +922,49 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
                staff
                |> Ash.Changeset.for_update(:deactivate, %{}, actor: instructor)
                |> Ash.update(domain: Studios)
+    end
+
+    test "non-owners cannot update staff assignments" do
+      org = create_organization()
+      member = create_user(organization: org, role: :client)
+      studio = create_studio(organization: org)
+      staff = create_studio_staff(studio: studio)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               staff
+               |> Ash.Changeset.for_update(:update, %{role: :manager}, actor: member)
+               |> Ash.update(domain: Studios)
+    end
+
+    test "non-owners cannot destroy staff assignments" do
+      org = create_organization()
+      member = create_user(organization: org, role: :client)
+      studio = create_studio(organization: org)
+      staff = create_studio_staff(studio: studio)
+
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Ash.destroy(staff, domain: Studios, actor: member)
+    end
+
+    test "cross-organization owners cannot assign staff" do
+      org1 = create_organization(name: "Org 1")
+      org2 = create_organization(name: "Org 2")
+
+      owner2 = create_user(organization: org2, role: :owner)
+      studio1 = create_studio(organization: org1)
+      user1 = create_user(organization: org1)
+
+      attrs = %{
+        studio_id: studio1.id,
+        user_id: user1.id,
+        role: :instructor
+      }
+
+      # Owner of org2 cannot assign staff to studio in org1
+      assert {:error, %Ash.Error.Forbidden{}} =
+               StudioStaff
+               |> Ash.Changeset.for_create(:assign, attrs, actor: owner2)
+               |> Ash.create(domain: Studios)
     end
   end
 
@@ -1325,7 +1364,7 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       PilatesOnPhx.AccountsFixtures.create_organization_membership(
         organization: org2,
         user: user,
-        role: :member
+        role: :client
       )
 
       studio1 = create_studio(organization: org1)
