@@ -1241,7 +1241,7 @@ defmodule PilatesOnPhx.Studios.RoomTest do
   describe "preparation filters with complex actor states" do
     test "handles actor with empty memberships list" do
       # Create user with no organization memberships
-      user = PilatesOnPhx.AccountsFixtures.create_user(%{email: "no-org@example.com"})
+      user = PilatesOnPhx.AccountsFixtures.create_user_without_org()
 
       # Ensure user has empty memberships list loaded
       user_with_memberships =
@@ -1276,6 +1276,7 @@ defmodule PilatesOnPhx.Studios.RoomTest do
       # Query with user should only see rooms from org1
       {:ok, rooms} =
         Room
+        |> Ash.Query.load(:studio)
         |> Ash.read(domain: Studios, actor: user_with_memberships)
 
       assert length(rooms) >= 1
@@ -1292,7 +1293,7 @@ defmodule PilatesOnPhx.Studios.RoomTest do
       PilatesOnPhx.AccountsFixtures.create_organization_membership(
         organization: org2,
         user: user,
-        role: :client
+        role: :member
       )
 
       studio1 = create_studio(organization: org1)

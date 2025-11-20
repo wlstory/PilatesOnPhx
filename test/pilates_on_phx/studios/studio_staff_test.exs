@@ -1241,8 +1241,7 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       studio = create_studio(organization: org)
       user = create_user(organization: org)
 
-      assert {:ok, staff} =
-               create_studio_staff(studio: studio, user: user, permissions: [])
+      staff = create_studio_staff(studio: studio, user: user, permissions: [])
 
       assert staff.permissions == []
     end
@@ -1254,8 +1253,7 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
 
       permissions = ["teach", "manage_schedule", "view_reports", "edit_classes"]
 
-      assert {:ok, staff} =
-               create_studio_staff(studio: studio, user: user, permissions: permissions)
+      staff = create_studio_staff(studio: studio, user: user, permissions: permissions)
 
       assert length(staff.permissions) == 4
       assert "teach" in staff.permissions
@@ -1270,7 +1268,7 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       # Create notes at exactly max length (2000 chars)
       long_notes = String.duplicate("a", 2000)
 
-      assert {:ok, staff} = create_studio_staff(studio: studio, user: user, notes: long_notes)
+      staff = create_studio_staff(studio: studio, user: user, notes: long_notes)
 
       assert String.length(staff.notes) == 2000
     end
@@ -1298,7 +1296,7 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       studio = create_studio(organization: org)
       user = create_user(organization: org)
 
-      assert {:ok, staff} = create_studio_staff(studio: studio, user: user, notes: nil)
+      staff = create_studio_staff(studio: studio, user: user, notes: nil)
 
       assert staff.notes == nil
     end
@@ -1328,7 +1326,7 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       Enum.each(valid_roles, fn role ->
         user = create_user(organization: org)
 
-        assert {:ok, staff} = create_studio_staff(studio: studio, user: user, role: role)
+        staff = create_studio_staff(studio: studio, user: user, role: role)
 
         assert staff.role == role
       end)
@@ -1338,7 +1336,7 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
   describe "preparation filters with complex actor states" do
     test "handles actor with empty memberships list" do
       # Create user with no organization memberships
-      user = PilatesOnPhx.AccountsFixtures.create_user(%{email: "no-org@example.com"})
+      user = PilatesOnPhx.AccountsFixtures.create_user_without_org()
 
       # Ensure user has empty memberships list loaded
       user_with_memberships =
@@ -1364,7 +1362,7 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       PilatesOnPhx.AccountsFixtures.create_organization_membership(
         organization: org2,
         user: user,
-        role: :client
+        role: :member
       )
 
       studio1 = create_studio(organization: org1)
@@ -1407,6 +1405,7 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       # Query with user1 should only see staff from org1
       {:ok, staff_list} =
         StudioStaff
+        |> Ash.Query.load(:studio)
         |> Ash.read(domain: Studios, actor: user1_with_memberships)
 
       assert length(staff_list) >= 1

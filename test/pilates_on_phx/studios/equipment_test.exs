@@ -1310,8 +1310,7 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
     test "handles unicode in equipment name" do
       studio = create_studio()
 
-      assert {:ok, equipment} =
-               create_equipment(studio: studio, name: "Réformateur #1 体育")
+      equipment = create_equipment(studio: studio, name: "Réformateur #1 体育")
 
       assert equipment.name == "Réformateur #1 体育"
     end
@@ -1325,7 +1324,8 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
                |> Ash.Changeset.for_create(:create, %{
                  studio_id: studio.id,
                  name: long_name,
-                 equipment_type: "reformer"
+                 equipment_type: "reformer",
+                 portable: true
                })
                |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
@@ -1355,7 +1355,8 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
                |> Ash.Changeset.for_create(:create, %{
                  studio_id: studio.id,
                  name: "Equipment 1",
-                 equipment_type: long_type
+                 equipment_type: long_type,
+                 portable: true
                })
                |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
 
@@ -1385,8 +1386,7 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
       studio = create_studio()
       long_serial = String.duplicate("1", 255)
 
-      assert {:ok, equipment} =
-               create_equipment(studio: studio, serial_number: long_serial)
+      equipment = create_equipment(studio: studio, serial_number: long_serial)
 
       assert String.length(equipment.serial_number) == 255
     end
@@ -1415,8 +1415,7 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
       studio = create_studio()
       long_notes = String.duplicate("a", 5000)
 
-      assert {:ok, equipment} =
-               create_equipment(studio: studio, maintenance_notes: long_notes)
+      equipment = create_equipment(studio: studio, maintenance_notes: long_notes)
 
       assert String.length(equipment.maintenance_notes) == 5000
     end
@@ -1440,7 +1439,7 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
   describe "preparation filters with complex actor states" do
     test "handles actor with empty memberships list" do
       # Create user with no organization memberships
-      user = PilatesOnPhx.AccountsFixtures.create_user(%{email: "no-org@example.com"})
+      user = PilatesOnPhx.AccountsFixtures.create_user_without_org()
 
       # Ensure user has empty memberships list loaded
       user_with_memberships =
@@ -1475,6 +1474,7 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
       # Query with user should only see equipment from org1
       {:ok, equipment_list} =
         Equipment
+        |> Ash.Query.load(:studio)
         |> Ash.read(domain: Studios, actor: user_with_memberships)
 
       assert length(equipment_list) >= 1
@@ -1494,7 +1494,7 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
       PilatesOnPhx.AccountsFixtures.create_organization_membership(
         organization: org2,
         user: user,
-        role: :client
+        role: :member
       )
 
       studio1 = create_studio(organization: org1)

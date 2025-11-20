@@ -1086,8 +1086,9 @@ defmodule PilatesOnPhx.Studios.StudioTest do
     test "users without actor cannot read studios" do
       _studio = create_studio()
 
-      # Query without actor should return error or empty
-      assert {:ok, []} = Studio |> Ash.read(domain: Studios, actor: nil)
+      # Query without actor should return forbidden error due to actor_present() policy
+      assert {:error, %Ash.Error.Forbidden{}} =
+               Studio |> Ash.read(domain: Studios, actor: nil)
     end
 
     test "create fails when trying to create studio for different organization" do

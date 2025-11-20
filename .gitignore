@@ -35,3 +35,6 @@ pilates_on_phx-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# Dialyzer PLT files (machine-specific)
+/priv/plts/
+
