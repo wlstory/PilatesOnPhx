@@ -1066,4 +1066,389 @@ defmodule PilatesOnPhx.Studios.EquipmentTest do
       assert found_studio.id == studio.id
     end
   end
+
+  describe "portable equipment validation edge cases" do
+    test "validates portable equipment with room_id is allowed" do
+      studio = create_studio()
+      room = create_room(studio: studio)
+
+      # Portable equipment CAN have a room assigned
+      assert {:ok, equipment} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "Portable Mat #1",
+                 equipment_type: "mat",
+                 portable: true,
+                 room_id: room.id
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert equipment.portable == true
+      assert equipment.room_id == room.id
+    end
+
+    test "validates portable equipment without room_id is allowed" do
+      studio = create_studio()
+
+      # Portable equipment can have nil room_id
+      assert {:ok, equipment} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "Portable Prop #1",
+                 equipment_type: "prop",
+                 portable: true,
+                 room_id: nil
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert equipment.portable == true
+      assert equipment.room_id == nil
+    end
+
+    test "validates non-portable equipment requires room assignment" do
+      studio = create_studio()
+
+      # Non-portable equipment without room should fail
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "Fixed Reformer #1",
+                 equipment_type: "reformer",
+                 portable: false,
+                 room_id: nil
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      changeset = error.changeset
+
+      # Verify error message
+      assert Enum.any?(changeset.errors, fn err ->
+               err.field == :room_id &&
+                 String.contains?(err.message, "non-portable equipment must be assigned to a room")
+             end)
+    end
+
+    test "validates non-portable equipment with room assignment is allowed" do
+      studio = create_studio()
+      room = create_room(studio: studio)
+
+      # Non-portable equipment WITH room should succeed
+      assert {:ok, equipment} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "Fixed Reformer #1",
+                 equipment_type: "reformer",
+                 portable: false,
+                 room_id: room.id
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert equipment.portable == false
+      assert equipment.room_id == room.id
+    end
+
+    test "can update portable from false to true and remove room" do
+      studio = create_studio()
+      room = create_room(studio: studio)
+
+      # Create non-portable equipment with room
+      equipment = create_equipment(studio: studio, room: room, portable: false)
+      assert equipment.portable == false
+      assert equipment.room_id != nil
+
+      # Update to portable and remove room
+      assert {:ok, updated} =
+               equipment
+               |> Ash.Changeset.for_update(:update, %{portable: true, room_id: nil},
+                 actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+               )
+               |> Ash.update(domain: Studios)
+
+      assert updated.portable == true
+      assert updated.room_id == nil
+    end
+
+    test "cannot update portable from true to false without assigning room" do
+      studio = create_studio()
+
+      # Create portable equipment without room
+      equipment = create_equipment(studio: studio, portable: true, room_id: nil)
+
+      # Try to make it non-portable without assigning room
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               equipment
+               |> Ash.Changeset.for_update(:update, %{portable: false},
+                 actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+               )
+               |> Ash.update(domain: Studios)
+
+      changeset = error.changeset
+
+      assert Enum.any?(changeset.errors, fn err ->
+               err.field == :room_id &&
+                 String.contains?(err.message, "non-portable equipment must be assigned to a room")
+             end)
+    end
+
+    test "can update portable from true to false by assigning room simultaneously" do
+      studio = create_studio()
+      room = create_room(studio: studio)
+
+      # Create portable equipment without room
+      equipment = create_equipment(studio: studio, portable: true, room_id: nil)
+
+      # Make it non-portable by assigning room in same operation
+      assert {:ok, updated} =
+               equipment
+               |> Ash.Changeset.for_update(:update, %{portable: false, room_id: room.id},
+                 actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+               )
+               |> Ash.update(domain: Studios)
+
+      assert updated.portable == false
+      assert updated.room_id == room.id
+    end
+  end
+
+  describe "string field validation edge cases" do
+    test "validates equipment name is not empty after trimming" do
+      studio = create_studio()
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "   ",
+                 equipment_type: "reformer"
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "validates equipment type is not empty after trimming" do
+      studio = create_studio()
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "Equipment 1",
+                 equipment_type: "   "
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "handles unicode in equipment name" do
+      studio = create_studio()
+
+      assert {:ok, equipment} =
+               create_equipment(studio: studio, name: "Réformateur #1 体育")
+
+      assert equipment.name == "Réformateur #1 体育"
+    end
+
+    test "validates name maximum length (255 chars)" do
+      studio = create_studio()
+      long_name = String.duplicate("a", 255)
+
+      assert {:ok, equipment} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: long_name,
+                 equipment_type: "reformer"
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert String.length(equipment.name) == 255
+    end
+
+    test "rejects name exceeding maximum length" do
+      studio = create_studio()
+      too_long_name = String.duplicate("a", 256)
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: too_long_name,
+                 equipment_type: "reformer"
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "validates equipment_type maximum length (100 chars)" do
+      studio = create_studio()
+      long_type = String.duplicate("a", 100)
+
+      assert {:ok, equipment} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "Equipment 1",
+                 equipment_type: long_type
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert String.length(equipment.equipment_type) == 100
+    end
+
+    test "rejects equipment_type exceeding maximum length" do
+      studio = create_studio()
+      too_long_type = String.duplicate("a", 101)
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "Equipment 1",
+                 equipment_type: too_long_type
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "handles nil serial_number" do
+      equipment = create_equipment(serial_number: nil)
+      assert equipment.serial_number == nil
+    end
+
+    test "validates serial_number maximum length (255 chars)" do
+      studio = create_studio()
+      long_serial = String.duplicate("1", 255)
+
+      assert {:ok, equipment} =
+               create_equipment(studio: studio, serial_number: long_serial)
+
+      assert String.length(equipment.serial_number) == 255
+    end
+
+    test "rejects serial_number exceeding maximum length" do
+      studio = create_studio()
+      too_long_serial = String.duplicate("1", 256)
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "Equipment 1",
+                 equipment_type: "reformer",
+                 serial_number: too_long_serial
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "handles nil maintenance_notes" do
+      equipment = create_equipment(maintenance_notes: nil)
+      assert equipment.maintenance_notes == nil
+    end
+
+    test "validates maintenance_notes maximum length (5000 chars)" do
+      studio = create_studio()
+      long_notes = String.duplicate("a", 5000)
+
+      assert {:ok, equipment} =
+               create_equipment(studio: studio, maintenance_notes: long_notes)
+
+      assert String.length(equipment.maintenance_notes) == 5000
+    end
+
+    test "rejects maintenance_notes exceeding maximum length" do
+      studio = create_studio()
+      too_long_notes = String.duplicate("a", 5001)
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Equipment
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "Equipment 1",
+                 equipment_type: "reformer",
+                 maintenance_notes: too_long_notes
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+  end
+
+  describe "preparation filters with complex actor states" do
+    test "handles actor with empty memberships list" do
+      # Create user with no organization memberships
+      user = PilatesOnPhx.AccountsFixtures.create_user(%{email: "no-org@example.com"})
+
+      # Ensure user has empty memberships list loaded
+      user_with_memberships =
+        Ash.load!(user, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false)
+
+      assert user_with_memberships.memberships == []
+
+      # Query should return empty when actor has no organizations
+      {:ok, equipment_list} =
+        Equipment
+        |> Ash.read(domain: Studios, actor: user_with_memberships)
+
+      assert equipment_list == []
+    end
+
+    test "filters equipment by actor's organization memberships" do
+      org1 = create_organization(name: "Org 1")
+      org2 = create_organization(name: "Org 2")
+
+      user = create_user(organization: org1)
+
+      studio1 = create_studio(organization: org1)
+      studio2 = create_studio(organization: org2)
+
+      equipment1 = create_equipment(studio: studio1)
+      _equipment2 = create_equipment(studio: studio2)
+
+      # Load user with memberships
+      user_with_memberships =
+        Ash.load!(user, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false)
+
+      # Query with user should only see equipment from org1
+      {:ok, equipment_list} =
+        Equipment
+        |> Ash.read(domain: Studios, actor: user_with_memberships)
+
+      assert length(equipment_list) >= 1
+
+      assert Enum.all?(equipment_list, fn equip ->
+               equip.studio.organization_id == org1.id
+             end)
+    end
+
+    test "handles actor with multiple organization memberships" do
+      org1 = create_organization(name: "Org 1")
+      org2 = create_organization(name: "Org 2")
+
+      user = create_user(organization: org1)
+
+      # Add user to second organization
+      PilatesOnPhx.AccountsFixtures.create_organization_membership(
+        organization: org2,
+        user: user,
+        role: :member
+      )
+
+      studio1 = create_studio(organization: org1)
+      studio2 = create_studio(organization: org2)
+
+      equipment1 = create_equipment(studio: studio1)
+      equipment2 = create_equipment(studio: studio2)
+
+      # Load user with memberships
+      user_with_memberships =
+        Ash.load!(user, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false)
+
+      # Query should return equipment from both organizations
+      {:ok, equipment_list} =
+        Equipment
+        |> Ash.read(domain: Studios, actor: user_with_memberships)
+
+      equipment_ids = Enum.map(equipment_list, & &1.id)
+      assert equipment1.id in equipment_ids
+      assert equipment2.id in equipment_ids
+    end
+  end
 end

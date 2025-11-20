@@ -1098,4 +1098,280 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       assert found_studio.id == studio.id
     end
   end
+
+  describe "validation error paths" do
+    test "validates cross-organization staff assignment fails with clear error" do
+      org1 = create_organization(name: "Org 1")
+      org2 = create_organization(name: "Org 2")
+
+      studio = create_studio(organization: org1)
+      user = create_user(organization: org2)
+
+      # Try to assign user from org2 to studio in org1
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               StudioStaff
+               |> Ash.Changeset.for_create(:assign, %{
+                 studio_id: studio.id,
+                 user_id: user.id,
+                 role: :instructor
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      changeset = error.changeset
+      assert changeset.valid? == false
+
+      # Verify error message indicates organization mismatch
+      assert Enum.any?(changeset.errors, fn err ->
+               err.field == :user_id &&
+                 String.contains?(err.message, "must be a member of the studio's organization")
+             end)
+    end
+
+    test "handles nil studio_id gracefully in validation" do
+      user = create_user()
+
+      # Try to create staff without studio_id
+      assert {:error, %Ash.Error.Invalid{}} =
+               StudioStaff
+               |> Ash.Changeset.for_create(:assign, %{
+                 user_id: user.id,
+                 role: :instructor
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "handles nil user_id gracefully in validation" do
+      studio = create_studio()
+
+      # Try to create staff without user_id
+      assert {:error, %Ash.Error.Invalid{}} =
+               StudioStaff
+               |> Ash.Changeset.for_create(:assign, %{
+                 studio_id: studio.id,
+                 role: :instructor
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "handles non-existent studio_id in validation" do
+      user = create_user()
+      fake_studio_id = Ash.UUID.generate()
+
+      # Try to assign staff to non-existent studio
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               StudioStaff
+               |> Ash.Changeset.for_create(:assign, %{
+                 studio_id: fake_studio_id,
+                 user_id: user.id,
+                 role: :instructor
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      changeset = error.changeset
+
+      # Verify error indicates studio not found
+      assert Enum.any?(changeset.errors, fn err ->
+               err.field == :studio_id && String.contains?(err.message, "studio not found")
+             end)
+    end
+
+    test "handles non-existent user_id in validation" do
+      studio = create_studio()
+      fake_user_id = Ash.UUID.generate()
+
+      # Try to assign non-existent user
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               StudioStaff
+               |> Ash.Changeset.for_create(:assign, %{
+                 studio_id: studio.id,
+                 user_id: fake_user_id,
+                 role: :instructor
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      changeset = error.changeset
+
+      # Verify error indicates user not found
+      assert Enum.any?(changeset.errors, fn err ->
+               err.field == :user_id && String.contains?(err.message, "user not found")
+             end)
+    end
+
+    test "validates permissions can be empty array" do
+      org = create_organization()
+      studio = create_studio(organization: org)
+      user = create_user(organization: org)
+
+      assert {:ok, staff} =
+               create_studio_staff(studio: studio, user: user, permissions: [])
+
+      assert staff.permissions == []
+    end
+
+    test "validates permissions with multiple values" do
+      org = create_organization()
+      studio = create_studio(organization: org)
+      user = create_user(organization: org)
+
+      permissions = ["teach", "manage_schedule", "view_reports", "edit_classes"]
+
+      assert {:ok, staff} =
+               create_studio_staff(studio: studio, user: user, permissions: permissions)
+
+      assert length(staff.permissions) == 4
+      assert "teach" in staff.permissions
+      assert "manage_schedule" in staff.permissions
+    end
+
+    test "handles notes field with maximum length" do
+      org = create_organization()
+      studio = create_studio(organization: org)
+      user = create_user(organization: org)
+
+      # Create notes at exactly max length (2000 chars)
+      long_notes = String.duplicate("a", 2000)
+
+      assert {:ok, staff} = create_studio_staff(studio: studio, user: user, notes: long_notes)
+
+      assert String.length(staff.notes) == 2000
+    end
+
+    test "rejects notes exceeding maximum length" do
+      studio = create_studio()
+      user = create_user()
+
+      # Create notes exceeding max length (2001 chars)
+      too_long_notes = String.duplicate("a", 2001)
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               StudioStaff
+               |> Ash.Changeset.for_create(:assign, %{
+                 studio_id: studio.id,
+                 user_id: user.id,
+                 role: :instructor,
+                 notes: too_long_notes
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "handles nil notes field" do
+      org = create_organization()
+      studio = create_studio(organization: org)
+      user = create_user(organization: org)
+
+      assert {:ok, staff} = create_studio_staff(studio: studio, user: user, notes: nil)
+
+      assert staff.notes == nil
+    end
+
+    test "validates role must be one of allowed values" do
+      org = create_organization()
+      studio = create_studio(organization: org)
+      user = create_user(organization: org)
+
+      # Try invalid role
+      assert {:error, %Ash.Error.Invalid{}} =
+               StudioStaff
+               |> Ash.Changeset.for_create(:assign, %{
+                 studio_id: studio.id,
+                 user_id: user.id,
+                 role: :invalid_role
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "accepts all valid role values" do
+      org = create_organization()
+      studio = create_studio(organization: org)
+
+      valid_roles = [:instructor, :front_desk, :manager]
+
+      Enum.each(valid_roles, fn role ->
+        user = create_user(organization: org)
+
+        assert {:ok, staff} = create_studio_staff(studio: studio, user: user, role: role)
+
+        assert staff.role == role
+      end)
+    end
+  end
+
+  describe "preparation filters with complex actor states" do
+    test "handles actor with empty memberships list" do
+      # Create user with no organization memberships
+      user = PilatesOnPhx.AccountsFixtures.create_user(%{email: "no-org@example.com"})
+
+      # Ensure user has empty memberships list loaded
+      user_with_memberships =
+        Ash.load!(user, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false)
+
+      assert user_with_memberships.memberships == []
+
+      # Query should return empty when actor has no organizations
+      {:ok, staff_list} =
+        StudioStaff
+        |> Ash.read(domain: Studios, actor: user_with_memberships)
+
+      assert staff_list == []
+    end
+
+    test "handles actor with memberships from multiple organizations" do
+      org1 = create_organization(name: "Org 1")
+      org2 = create_organization(name: "Org 2")
+
+      user = create_user(organization: org1)
+
+      # Add user to second organization
+      PilatesOnPhx.AccountsFixtures.create_organization_membership(
+        organization: org2,
+        user: user,
+        role: :member
+      )
+
+      studio1 = create_studio(organization: org1)
+      studio2 = create_studio(organization: org2)
+
+      staff1 = create_studio_staff(studio: studio1, user: user)
+      staff2 = create_studio_staff(studio: studio2, user: user)
+
+      # Load user with memberships
+      user_with_memberships =
+        Ash.load!(user, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false)
+
+      # Query should return staff from both organizations
+      {:ok, staff_list} =
+        StudioStaff
+        |> Ash.read(domain: Studios, actor: user_with_memberships)
+
+      staff_ids = Enum.map(staff_list, & &1.id)
+      assert staff1.id in staff_ids
+      assert staff2.id in staff_ids
+    end
+
+    test "filters out staff from organizations actor doesn't belong to" do
+      org1 = create_organization(name: "Org 1")
+      org2 = create_organization(name: "Org 2")
+
+      user1 = create_user(organization: org1)
+      user2 = create_user(organization: org2)
+
+      studio1 = create_studio(organization: org1)
+      studio2 = create_studio(organization: org2)
+
+      staff1 = create_studio_staff(studio: studio1)
+      _staff2 = create_studio_staff(studio: studio2)
+
+      # Load user1 with memberships
+      user1_with_memberships =
+        Ash.load!(user1, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false)
+
+      # Query with user1 should only see staff from org1
+      {:ok, staff_list} =
+        StudioStaff
+        |> Ash.read(domain: Studios, actor: user1_with_memberships)
+
+      assert length(staff_list) >= 1
+      assert Enum.all?(staff_list, fn staff -> staff.studio.organization_id == org1.id end)
+    end
+  end
 end

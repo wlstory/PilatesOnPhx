@@ -1012,4 +1012,249 @@ defmodule PilatesOnPhx.Studios.RoomTest do
       # This behavior needs to be defined in Room resource
     end
   end
+
+  describe "validation edge cases" do
+    test "validates capacity minimum boundary" do
+      studio = create_studio()
+
+      # Capacity must be at least 1
+      assert {:error, %Ash.Error.Invalid{}} =
+               Room
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "Zero Capacity Room",
+                 capacity: 0
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "validates capacity maximum boundary" do
+      studio = create_studio()
+
+      # Capacity must not exceed 100
+      assert {:error, %Ash.Error.Invalid{}} =
+               Room
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "Oversized Room",
+                 capacity: 101
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "accepts capacity boundary values" do
+      studio = create_studio()
+
+      # Test min boundary (1)
+      assert {:ok, room_min} =
+               Room
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "Min Capacity Room",
+                 capacity: 1
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert room_min.capacity == 1
+
+      # Test max boundary (100)
+      assert {:ok, room_max} =
+               Room
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "Max Capacity Room",
+                 capacity: 100
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert room_max.capacity == 100
+    end
+
+    test "handles empty settings map" do
+      room = create_room(settings: %{})
+      assert room.settings == %{}
+    end
+
+    test "handles complex nested settings" do
+      complex_settings = %{
+        floor_type: "hardwood",
+        mirrors: %{
+          north_wall: true,
+          south_wall: true,
+          east_wall: false,
+          west_wall: false
+        },
+        lighting: %{
+          type: "LED",
+          dimmable: true,
+          zones: 4
+        },
+        climate: %{
+          hvac: true,
+          temperature_control: "individual",
+          humidity_control: false
+        }
+      }
+
+      room = create_room(settings: complex_settings)
+
+      assert room.settings["floor_type"] == "hardwood"
+      assert room.settings["mirrors"]["north_wall"] == true
+      assert room.settings["lighting"]["dimmable"] == true
+    end
+
+    test "validates name is not empty after trimming" do
+      studio = create_studio()
+
+      # Name with only whitespace should be rejected
+      assert {:error, %Ash.Error.Invalid{}} =
+               Room
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: "   ",
+                 capacity: 12
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "handles unicode and special characters in room name" do
+      studio = create_studio()
+
+      unicode_name = "Salle de Réforme #1 体育"
+
+      assert {:ok, room} =
+               Room
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: unicode_name,
+                 capacity: 15
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert room.name == unicode_name
+    end
+
+    test "validates name length within reasonable limits" do
+      studio = create_studio()
+
+      # Name at max length (255 chars)
+      long_name = String.duplicate("a", 255)
+
+      assert {:ok, room} =
+               Room
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: long_name,
+                 capacity: 12
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert String.length(room.name) == 255
+    end
+
+    test "rejects name exceeding maximum length" do
+      studio = create_studio()
+
+      # Name exceeding max length (256 chars)
+      too_long_name = String.duplicate("a", 256)
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Room
+               |> Ash.Changeset.for_create(:create, %{
+                 studio_id: studio.id,
+                 name: too_long_name,
+                 capacity: 12
+               })
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "rejects nil as settings during update" do
+      room = create_room()
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               room
+               |> Ash.Changeset.for_update(:update, %{settings: nil},
+                 actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+               )
+               |> Ash.update(domain: Studios)
+    end
+  end
+
+  describe "preparation filters with complex actor states" do
+    test "handles actor with empty memberships list" do
+      # Create user with no organization memberships
+      user = PilatesOnPhx.AccountsFixtures.create_user(%{email: "no-org@example.com"})
+
+      # Ensure user has empty memberships list loaded
+      user_with_memberships =
+        Ash.load!(user, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false)
+
+      assert user_with_memberships.memberships == []
+
+      # Query should return empty when actor has no organizations
+      {:ok, rooms} =
+        Room
+        |> Ash.read(domain: Studios, actor: user_with_memberships)
+
+      assert rooms == []
+    end
+
+    test "filters rooms by actor's organization memberships" do
+      org1 = create_organization(name: "Org 1")
+      org2 = create_organization(name: "Org 2")
+
+      user = create_user(organization: org1)
+
+      studio1 = create_studio(organization: org1)
+      studio2 = create_studio(organization: org2)
+
+      room1 = create_room(studio: studio1, name: "Org1 Room")
+      _room2 = create_room(studio: studio2, name: "Org2 Room")
+
+      # Load user with memberships
+      user_with_memberships =
+        Ash.load!(user, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false)
+
+      # Query with user should only see rooms from org1
+      {:ok, rooms} =
+        Room
+        |> Ash.read(domain: Studios, actor: user_with_memberships)
+
+      assert length(rooms) >= 1
+      assert Enum.all?(rooms, fn room -> room.studio.organization_id == org1.id end)
+    end
+
+    test "handles actor with multiple organization memberships" do
+      org1 = create_organization(name: "Org 1")
+      org2 = create_organization(name: "Org 2")
+
+      user = create_user(organization: org1)
+
+      # Add user to second organization
+      PilatesOnPhx.AccountsFixtures.create_organization_membership(
+        organization: org2,
+        user: user,
+        role: :member
+      )
+
+      studio1 = create_studio(organization: org1)
+      studio2 = create_studio(organization: org2)
+
+      room1 = create_room(studio: studio1)
+      room2 = create_room(studio: studio2)
+
+      # Load user with memberships
+      user_with_memberships =
+        Ash.load!(user, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false)
+
+      # Query should return rooms from both organizations
+      {:ok, rooms} =
+        Room
+        |> Ash.read(domain: Studios, actor: user_with_memberships)
+
+      room_ids = Enum.map(rooms, & &1.id)
+      assert room1.id in room_ids
+      assert room2.id in room_ids
+    end
+  end
 end

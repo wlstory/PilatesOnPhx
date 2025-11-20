@@ -1129,6 +1129,187 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       assert studio.settings["level1"]["level2"]["level3"]["level4"]["deeply_nested_value"] ==
                "found"
     end
+
+    test "rejects invalid timezone with detailed error message" do
+      org = create_organization()
+
+      attrs = %{
+        name: "Studio with Bad Timezone",
+        address: "123 Main St",
+        timezone: "Invalid/Timezone",
+        organization_id: org.id
+      }
+
+      assert {:error, %Ash.Error.Invalid{} = error} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      changeset = error.changeset
+      assert changeset.valid? == false
+
+      # Verify the timezone error is present
+      assert Enum.any?(changeset.errors, fn error ->
+               error.field == :timezone &&
+                 String.contains?(error.message, "must be a valid IANA timezone")
+             end)
+    end
+
+    test "rejects partial timezone names" do
+      org = create_organization()
+
+      attrs = %{
+        name: "Studio with Partial Timezone",
+        address: "123 Main St",
+        timezone: "America",
+        organization_id: org.id
+      }
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "rejects timezone with typos" do
+      org = create_organization()
+
+      # Common typo: Los_Angelos instead of Los_Angeles
+      attrs = %{
+        name: "Studio with Typo Timezone",
+        address: "123 Main St",
+        timezone: "America/Los_Angelos",
+        organization_id: org.id
+      }
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "accepts all documented valid IANA timezones" do
+      org = create_organization()
+
+      # Test a representative sample of timezones from different regions
+      valid_timezones = [
+        "UTC",
+        "GMT",
+        "America/New_York",
+        "America/Los_Angeles",
+        "Europe/London",
+        "Europe/Paris",
+        "Asia/Tokyo",
+        "Asia/Dubai",
+        "Australia/Sydney",
+        "Pacific/Auckland"
+      ]
+
+      Enum.each(valid_timezones, fn timezone ->
+        attrs = %{
+          name: "Studio #{timezone}",
+          address: "123 Main St",
+          timezone: timezone,
+          organization_id: org.id
+        }
+
+        assert {:ok, studio} =
+                 Studio
+                 |> Ash.Changeset.for_create(:create, attrs)
+                 |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+        assert studio.timezone == timezone
+      end)
+    end
+
+    test "validates max_capacity is at least 1" do
+      org = create_organization()
+
+      attrs = %{
+        name: "Zero Capacity Studio",
+        address: "123 Main St",
+        max_capacity: 0,
+        organization_id: org.id
+      }
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "validates max_capacity does not exceed 500" do
+      org = create_organization()
+
+      attrs = %{
+        name: "Oversized Studio",
+        address: "123 Main St",
+        max_capacity: 501,
+        organization_id: org.id
+      }
+
+      assert {:error, %Ash.Error.Invalid{}} =
+               Studio
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+    end
+
+    test "accepts max_capacity boundary values" do
+      org = create_organization()
+
+      # Test min boundary
+      assert {:ok, studio_min} =
+               Studio
+               |> Ash.Changeset.for_create(
+                 :create,
+                 %{
+                   name: "Min Capacity Studio",
+                   address: "123 Main St",
+                   max_capacity: 1,
+                   organization_id: org.id
+                 }
+               )
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert studio_min.max_capacity == 1
+
+      # Test max boundary
+      assert {:ok, studio_max} =
+               Studio
+               |> Ash.Changeset.for_create(
+                 :create,
+                 %{
+                   name: "Max Capacity Studio",
+                   address: "123 Main St",
+                   max_capacity: 500,
+                   organization_id: org.id
+                 }
+               )
+               |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+
+      assert studio_max.max_capacity == 500
+    end
+
+    test "handles empty operating_hours map" do
+      studio = create_studio(operating_hours: %{})
+      assert studio.operating_hours == %{}
+    end
+
+    test "validates operating_hours with custom schedule" do
+      custom_hours = %{
+        "mon" => "5:00-22:00",
+        "tue" => "5:00-22:00",
+        "wed" => "closed",
+        "thu" => "5:00-22:00",
+        "fri" => "5:00-22:00",
+        "sat" => "7:00-15:00",
+        "sun" => "closed"
+      }
+
+      studio = create_studio(operating_hours: custom_hours)
+      assert studio.operating_hours["wed"] == "closed"
+      assert studio.operating_hours["sun"] == "closed"
+    end
   end
 
   describe "concurrent studio operations" do
