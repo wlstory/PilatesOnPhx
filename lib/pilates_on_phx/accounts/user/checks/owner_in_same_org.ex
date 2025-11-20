@@ -20,56 +20,47 @@ defmodule PilatesOnPhx.Accounts.User.Checks.OwnerInSameOrg do
     if actor.id == user.id do
       false
     else
-      # Get actor's memberships - load with bypass to avoid auth recursion
-      actor_memberships =
-        case Map.get(actor, :memberships) do
-          %Ash.NotLoaded{} ->
-            case Ash.load(actor, :memberships,
-                   domain: PilatesOnPhx.Accounts,
-                   authorize?: false
-                 ) do
-              {:ok, loaded} -> loaded.memberships
-              _ -> []
-            end
+      check_owner_in_same_org(actor, user)
+    end
+  end
 
-          memberships when is_list(memberships) ->
-            memberships
+  defp check_owner_in_same_org(actor, user) do
+    actor_memberships = get_memberships(actor)
+    user_memberships = get_memberships(user)
 
-          _ ->
-            []
-        end
+    actor_owner_org_ids =
+      actor_memberships
+      |> Enum.filter(fn m -> m.role == :owner end)
+      |> Enum.map(& &1.organization_id)
 
-      # Get user's memberships - load with bypass to avoid auth recursion
-      user_memberships =
-        case Map.get(user, :memberships) do
-          %Ash.NotLoaded{} ->
-            case Ash.load(user, :memberships,
-                   domain: PilatesOnPhx.Accounts,
-                   authorize?: false
-                 ) do
-              {:ok, loaded} -> loaded.memberships
-              _ -> []
-            end
+    user_org_ids = Enum.map(user_memberships, & &1.organization_id)
 
-          memberships when is_list(memberships) ->
-            memberships
+    # Check if there's any overlap
+    not Enum.empty?(
+      MapSet.intersection(MapSet.new(actor_owner_org_ids), MapSet.new(user_org_ids))
+    )
+  end
 
-          _ ->
-            []
-        end
+  defp get_memberships(user) do
+    case Map.get(user, :memberships) do
+      %Ash.NotLoaded{} ->
+        load_memberships(user)
 
-      # Find shared organizations where actor is owner
-      actor_owner_org_ids =
-        actor_memberships
-        |> Enum.filter(fn m -> m.role == :owner end)
-        |> Enum.map(& &1.organization_id)
+      memberships when is_list(memberships) ->
+        memberships
 
-      user_org_ids = Enum.map(user_memberships, & &1.organization_id)
+      _ ->
+        []
+    end
+  end
 
-      # Check if there's any overlap
-      not Enum.empty?(
-        MapSet.intersection(MapSet.new(actor_owner_org_ids), MapSet.new(user_org_ids))
-      )
+  defp load_memberships(user) do
+    case Ash.load(user, :memberships,
+           domain: PilatesOnPhx.Accounts,
+           authorize?: false
+         ) do
+      {:ok, loaded} -> loaded.memberships
+      _ -> []
     end
   end
 end
