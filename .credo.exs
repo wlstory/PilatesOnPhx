@@ -82,8 +82,8 @@
           # You can customize the priority of any check
           # Priority values are: `low, normal, high, higher`
           #
-          {Credo.Check.Design.AliasUsage,
-           [priority: :low, if_nested_deeper_than: 2, if_called_more_often_than: 0]},
+          # Disable nested module alias check - not critical for our codebase
+          {Credo.Check.Design.AliasUsage, false},
           # Disable TODO check since we're using them for documentation
           {Credo.Check.Design.TagTODO, false},
           {Credo.Check.Design.TagFIXME, []},
