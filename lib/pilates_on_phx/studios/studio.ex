@@ -303,12 +303,7 @@ defmodule PilatesOnPhx.Studios.Studio do
     policy action_type(:create) do
       # Organization owners can create studios
       # Verify the actor is an owner of the organization being assigned
-      authorize_if expr(
-                     exists(
-                       organization.memberships,
-                       user_id == ^actor(:id) and role == :owner
-                     )
-                   )
+      authorize_if PilatesOnPhx.Studios.Studio.Checks.ActorOwnsOrganization
     end
 
     policy action_type([:update, :destroy]) do

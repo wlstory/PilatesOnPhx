@@ -950,7 +950,7 @@ defmodule PilatesOnPhx.Studios.StudioStaffTest do
       org1 = create_organization(name: "Org 1")
       org2 = create_organization(name: "Org 2")
 
-      owner2 = create_user(organization: org2, role: :owner)
+      owner2 = create_user(organization: org2, organization_role: :owner)
       studio1 = create_studio(organization: org1)
       user1 = create_user(organization: org1)
 

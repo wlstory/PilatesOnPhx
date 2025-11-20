@@ -88,6 +88,9 @@ defmodule PilatesOnPhx.AccountsFixtures do
     # Handle organization - create if not provided
     organization = attrs[:organization] || create_organization()
 
+    # Extract organization_role (separate from user role)
+    organization_role = attrs[:organization_role] || :member
+
     user_attrs =
       %{
         email: "user_#{unique_id}@example.com",
@@ -97,6 +100,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
       }
       |> Map.merge(Enum.into(attrs, %{}))
       |> Map.delete(:organization)
+      |> Map.delete(:organization_role)
 
     # Create user through registration action
     user =
@@ -104,8 +108,8 @@ defmodule PilatesOnPhx.AccountsFixtures do
       |> Ash.Changeset.for_create(:register, user_attrs)
       |> Ash.create!(domain: Accounts, actor: bypass_actor())
 
-    # Create organization membership
-    create_organization_membership(user: user, organization: organization)
+    # Create organization membership with appropriate role
+    create_organization_membership(user: user, organization: organization, role: organization_role)
 
     # Reload user with memberships and organizations for policy checks
     User

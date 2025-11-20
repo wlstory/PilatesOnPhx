@@ -235,12 +235,7 @@ defmodule PilatesOnPhx.Studios.StudioStaff do
 
     policy action_type(:create) do
       # Organization owners can assign staff
-      authorize_if expr(
-                     exists(
-                       studio.organization.memberships,
-                       user_id == ^actor(:id) and role == :owner
-                     )
-                   )
+      authorize_if PilatesOnPhx.Studios.StudioStaff.Checks.ActorOwnsStudioOrganization
     end
 
     policy action_type([:update, :destroy]) do

@@ -1094,7 +1094,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       org1 = create_organization(name: "Org 1")
       org2 = create_organization(name: "Org 2")
 
-      owner1 = create_user(organization: org1, role: :owner)
+      owner1 = create_user(organization: org1, organization_role: :owner)
 
       # Owner of org1 tries to create studio in org2
       attrs = %{
@@ -1113,7 +1113,7 @@ defmodule PilatesOnPhx.Studios.StudioTest do
       org1 = create_organization(name: "Org 1")
       org2 = create_organization(name: "Org 2")
 
-      owner2 = create_user(organization: org2, role: :owner)
+      owner2 = create_user(organization: org2, organization_role: :owner)
       studio1 = create_studio(organization: org1)
 
       # Owner of org2 tries to update studio in org1
@@ -1278,7 +1278,10 @@ defmodule PilatesOnPhx.Studios.StudioTest do
         assert {:ok, studio} =
                  Studio
                  |> Ash.Changeset.for_create(:create, attrs)
-                 |> Ash.create(domain: Studios, actor: PilatesOnPhx.StudiosFixtures.bypass_actor())
+                 |> Ash.create(
+                   domain: Studios,
+                   actor: PilatesOnPhx.StudiosFixtures.bypass_actor()
+                 )
 
         assert studio.timezone == timezone
       end)
