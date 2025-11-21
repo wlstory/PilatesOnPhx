@@ -98,9 +98,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           key: |
-            plt-ci-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
+            plt-ci-v2-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            plt-ci-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-
+            plt-ci-v2-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-
           path: |
             priv/plts
 
@@ -117,7 +117,7 @@ jobs:
         if: steps.plt_cache.outputs.cache-hit != 'true'
         with:
           key: |
-            plt-ci-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
+            plt-ci-v2-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
           path: |
             priv/plts
 
