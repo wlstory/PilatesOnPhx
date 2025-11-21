@@ -23,8 +23,11 @@ defmodule PilatesOnPhx.Release do
   end
 
   defp load_app do
-    # Many platforms require SSL when connecting to the database
+    # Load the application without starting it
+    Application.load(@app)
+    # Start required dependencies for database connection
     Application.ensure_all_started(:ssl)
-    Application.ensure_loaded(@app)
+    Application.ensure_all_started(:postgrex)
+    Application.ensure_all_started(:ecto_sql)
   end
 end
