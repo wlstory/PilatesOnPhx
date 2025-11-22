@@ -79,22 +79,6 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       assert changeset.valid? == false
     end
 
-    test "sets default timezone if not provided" do
-      attrs = %{
-        name: "Studio Without Timezone",
-        active: true
-      }
-
-      assert {:ok, org} =
-               Organization
-               |> Ash.Changeset.for_create(:create, attrs)
-               |> Ash.create(domain: Accounts)
-
-      # Should have a default timezone (e.g., "UTC" or "America/New_York")
-      assert org.timezone != nil
-      assert is_binary(org.timezone)
-    end
-
     test "sets default active status to true if not provided" do
       attrs = %{
         name: "Studio Default Active"
@@ -108,6 +92,21 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
       assert org.active == true
     end
 
+    test "uses default timezone when not provided" do
+      attrs = %{
+        name: "Studio Default Timezone"
+      }
+
+      assert {:ok, org} =
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
+
+      # Should use the default timezone
+      assert org.timezone == "America/New_York"
+      assert org.name == "Studio Default Timezone"
+    end
+
     test "initializes empty settings map by default" do
       attrs = %{
         name: "Studio Default Settings"
@@ -119,6 +118,28 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
                |> Ash.create(domain: Accounts)
 
       assert org.settings == %{} or is_map(org.settings)
+    end
+
+    test "allows deeply nested settings structure" do
+      attrs = %{
+        name: "Studio With Complex Settings",
+        settings: %{
+          level1: %{
+            level2: %{
+              level3: %{
+                deep_value: "test"
+              }
+            }
+          }
+        }
+      }
+
+      assert {:ok, org} =
+               Organization
+               |> Ash.Changeset.for_create(:create, attrs)
+               |> Ash.create(domain: Accounts)
+
+      assert org.settings["level1"]["level2"]["level3"]["deep_value"] == "test"
     end
 
     test "allows custom settings JSON object" do
@@ -841,7 +862,9 @@ defmodule PilatesOnPhx.Accounts.OrganizationTest do
               :update,
               %{
                 name: "Updated Name #{i}"
-              }, actor: bypass_actor())
+              },
+              actor: bypass_actor()
+            )
             |> Ash.update(domain: Accounts)
           end)
         end)

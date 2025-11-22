@@ -9,8 +9,9 @@ kill_signal = 'SIGTERM'
 
 [build]
 
-[deploy]
-  release_command = '/app/bin/migrate'
+# [deploy]
+#   release_command = '/app/bin/migrate'
+# Temporarily disabled to diagnose deployment issues
 
 [env]
   PHX_HOST = 'pilatesonphx-prod.fly.dev'

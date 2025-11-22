@@ -38,6 +38,10 @@ jobs:
       - name: Install dependencies
         run: mix deps.get
 
+      # Step: Clean build to avoid "redefining module" warnings from stale beam files
+      - name: Clean build
+        run: mix clean
+
       # Step: Compile the project treating any warnings as errors.
       # Customize this step if a different behavior is desired.
       - name: Compiles without warnings
@@ -80,7 +84,7 @@ jobs:
         run: mix format --check-formatted
 
       - name: Credo
-        run: mix credo
+        run: mix credo --strict
 
       # Cache key based on Erlang/Elixir version and the mix.lock hash
       - name: Read .tool-versions for cache key
@@ -94,9 +98,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           key: |
-            plt-ci-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
+            plt-ci-v2-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            plt-ci-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-
+            plt-ci-v2-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-
           path: |
             priv/plts
 
@@ -113,7 +117,7 @@ jobs:
         if: steps.plt_cache.outputs.cache-hit != 'true'
         with:
           key: |
-            plt-ci-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
+            plt-ci-v2-${{ runner.os }}-${{ steps.tool-versions.outputs.otp-version }}-${{ steps.tool-versions.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
           path: |
             priv/plts
 

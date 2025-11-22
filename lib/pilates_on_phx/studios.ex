@@ -84,10 +84,9 @@ defmodule PilatesOnPhx.Studios do
   use Ash.Domain
 
   resources do
-    # Resources will be added in subsequent issues (PHX-3)
-    # - PilatesOnPhx.Studios.Studio
-    # - PilatesOnPhx.Studios.StudioStaff
-    # - PilatesOnPhx.Studios.Room
-    # - PilatesOnPhx.Studios.Equipment
+    resource PilatesOnPhx.Studios.Studio
+    resource PilatesOnPhx.Studios.StudioStaff
+    resource PilatesOnPhx.Studios.Room
+    resource PilatesOnPhx.Studios.Equipment
   end
 end

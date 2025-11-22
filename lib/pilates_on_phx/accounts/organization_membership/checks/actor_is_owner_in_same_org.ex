@@ -24,8 +24,11 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership.Checks.ActorIsOwnerInSame
   def match?(actor, %{data: membership}, _opts) when is_map(actor) and is_map(membership) do
     # Check if actor has loaded memberships
     case Map.get(actor, :memberships) do
-      nil -> false
-      %Ash.NotLoaded{} -> false
+      nil ->
+        false
+
+      %Ash.NotLoaded{} ->
+        false
 
       memberships when is_list(memberships) ->
         # Check if actor has an owner membership in the same organization
@@ -33,7 +36,8 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembership.Checks.ActorIsOwnerInSame
           m.organization_id == membership.organization_id and m.role == :owner
         end)
 
-      _ -> false
+      _ ->
+        false
     end
   end
 

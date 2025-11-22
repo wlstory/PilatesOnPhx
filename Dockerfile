@@ -55,8 +55,9 @@ COPY lib lib
 # Compile the release
 RUN mix compile
 
-# Copy pre-downloaded tailwind binary to avoid network issues during the mix task
-COPY _build/tailwind-linux-x64 _build/tailwind-linux-x64
+# Install tailwind standalone binary for Linux
+# This avoids issues with COPY expecting a local file that doesn't exist
+RUN mix tailwind.install --if-missing
 
 # compile assets
 RUN mix assets.deploy

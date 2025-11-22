@@ -12,7 +12,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
   """
 
   alias PilatesOnPhx.Accounts
-  alias PilatesOnPhx.Accounts.{User, Organization, Token, OrganizationMembership}
+  alias PilatesOnPhx.Accounts.{Organization, OrganizationMembership, Token, User}
 
   require Ash.Query
 
@@ -88,6 +88,9 @@ defmodule PilatesOnPhx.AccountsFixtures do
     # Handle organization - create if not provided
     organization = attrs[:organization] || create_organization()
 
+    # Extract organization_role (separate from user role)
+    organization_role = attrs[:organization_role] || :member
+
     user_attrs =
       %{
         email: "user_#{unique_id}@example.com",
@@ -97,6 +100,7 @@ defmodule PilatesOnPhx.AccountsFixtures do
       }
       |> Map.merge(Enum.into(attrs, %{}))
       |> Map.delete(:organization)
+      |> Map.delete(:organization_role)
 
     # Create user through registration action
     user =
@@ -104,10 +108,54 @@ defmodule PilatesOnPhx.AccountsFixtures do
       |> Ash.Changeset.for_create(:register, user_attrs)
       |> Ash.create!(domain: Accounts, actor: bypass_actor())
 
-    # Create organization membership
-    create_organization_membership(user: user, organization: organization)
+    # Create organization membership with appropriate role
+    create_organization_membership(
+      user: user,
+      organization: organization,
+      role: organization_role
+    )
 
     # Reload user with memberships and organizations for policy checks
+    User
+    |> Ash.Query.filter(id == ^user.id)
+    |> Ash.Query.load([:memberships, :organizations])
+    |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
+  end
+
+  @doc """
+  Creates a user without any organization membership.
+  Used for testing scenarios where users have no organization access.
+
+  ## Options
+    * `:email` - Email address (default: generated unique email)
+    * `:password` - Password (default: "SecurePassword123!")
+    * `:name` - Full name (default: generated name)
+    * `:role` - Role (default: :client)
+
+  ## Examples
+
+      iex> create_user_without_org()
+      %User{email: "orphan_user_1@example.com", memberships: []}
+  """
+  def create_user_without_org(attrs \\ %{}) do
+    unique_id = System.unique_integer([:positive])
+
+    user_attrs =
+      %{
+        email: "orphan_user_#{unique_id}@example.com",
+        password: "SecurePassword123!",
+        name: "Orphan User #{unique_id}",
+        role: :client
+      }
+      |> Map.merge(Enum.into(attrs, %{}))
+
+    # Create user through registration action without organization
+    user =
+      User
+      |> Ash.Changeset.for_create(:register, user_attrs)
+      |> Ash.create!(domain: Accounts, actor: bypass_actor())
+
+    # Reload user with memberships (empty) for consistency
     User
     |> Ash.Query.filter(id == ^user.id)
     |> Ash.Query.load([:memberships, :organizations])

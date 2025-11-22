@@ -53,8 +53,23 @@ defmodule PilatesOnPhx.StudiosTest do
       assert is_list(resources),
              "resources should return a list"
 
-      assert resources == [],
-             "Resources list should be empty initially"
+      # Studios domain now has 4 resources: Studio, StudioStaff, Room, Equipment
+      assert length(resources) == 4,
+             "Studios domain should have 4 registered resources"
+
+      resource_modules = Enum.map(resources, & &1)
+
+      assert PilatesOnPhx.Studios.Studio in resource_modules,
+             "Studio resource should be registered"
+
+      assert PilatesOnPhx.Studios.StudioStaff in resource_modules,
+             "StudioStaff resource should be registered"
+
+      assert PilatesOnPhx.Studios.Room in resource_modules,
+             "Room resource should be registered"
+
+      assert PilatesOnPhx.Studios.Equipment in resource_modules,
+             "Equipment resource should be registered"
     end
   end
 
@@ -80,11 +95,19 @@ defmodule PilatesOnPhx.StudiosTest do
              "Studios subdirectory does not exist"
     end
 
-    test "subdirectory is prepared for future resources" do
-      gitkeep = "lib/pilates_on_phx/studios/.gitkeep"
+    test "subdirectory contains resource files" do
+      # Studios domain should have resource implementations
+      assert File.exists?("lib/pilates_on_phx/studios/studio.ex"),
+             "Studio resource file should exist"
 
-      assert File.exists?(gitkeep),
-             ".gitkeep file not found in studios subdirectory"
+      assert File.exists?("lib/pilates_on_phx/studios/studio_staff.ex"),
+             "StudioStaff resource file should exist"
+
+      assert File.exists?("lib/pilates_on_phx/studios/room.ex"),
+             "Room resource file should exist"
+
+      assert File.exists?("lib/pilates_on_phx/studios/equipment.ex"),
+             "Equipment resource file should exist"
     end
   end
 

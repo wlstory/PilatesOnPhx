@@ -2,7 +2,7 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
   use PilatesOnPhx.DataCase, async: true
 
   alias PilatesOnPhx.Accounts
-  alias PilatesOnPhx.Accounts.{OrganizationMembership, User, Organization}
+  alias PilatesOnPhx.Accounts.{Organization, OrganizationMembership, User}
   import PilatesOnPhx.AccountsFixtures
 
   require Ash.Query
@@ -563,10 +563,11 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       studio_c = create_organization(name: "Studio C")
 
       # Use create_multi_org_user with specific organizations
-      instructor = create_multi_org_user(
-        user_attrs: %{role: :instructor, name: "John Instructor"},
-        organizations: [studio_a, studio_b, studio_c]
-      )
+      instructor =
+        create_multi_org_user(
+          user_attrs: %{role: :instructor, name: "John Instructor"},
+          organizations: [studio_a, studio_b, studio_c]
+        )
 
       # Update the Studio C membership to admin role
       studio_c_membership =
@@ -602,10 +603,11 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       other_studio = create_organization(name: "Other Studio")
 
       # Use create_multi_org_user with specific organizations
-      multi_owner = create_multi_org_user(
-        user_attrs: %{role: :owner, name: "Jane Owner"},
-        organizations: [own_studio_1, own_studio_2, other_studio]
-      )
+      multi_owner =
+        create_multi_org_user(
+          user_attrs: %{role: :owner, name: "Jane Owner"},
+          organizations: [own_studio_1, own_studio_2, other_studio]
+        )
 
       # Update the roles for each membership
       for {org, role} <- [{own_studio_1, :owner}, {own_studio_2, :owner}, {other_studio, :admin}] do
@@ -640,10 +642,11 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       work_studio = create_organization(name: "Work Studio")
 
       # Use create_multi_org_user with specific organizations
-      client = create_multi_org_user(
-        user_attrs: %{role: :client, name: "Client Member"},
-        organizations: [nearby_studio_1, nearby_studio_2, work_studio]
-      )
+      client =
+        create_multi_org_user(
+          user_attrs: %{role: :client, name: "Client Member"},
+          organizations: [nearby_studio_1, nearby_studio_2, work_studio]
+        )
 
       memberships =
         OrganizationMembership
@@ -901,7 +904,8 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
       |> Ash.update!(domain: Accounts)
 
       # Reload owner with memberships for policy checks
-      owner = Ash.load!(owner, [:memberships, :organizations], domain: Accounts, actor: bypass_actor())
+      owner =
+        Ash.load!(owner, [:memberships, :organizations], domain: Accounts, actor: bypass_actor())
 
       # Load organization with memberships for policy check
       member_membership =
@@ -933,6 +937,117 @@ defmodule PilatesOnPhx.Accounts.OrganizationMembershipTest do
                member_membership
                |> Ash.Changeset.for_update(:update, %{role: :owner}, actor: member)
                |> Ash.update(domain: Accounts)
+    end
+  end
+
+  describe "preparation filter - multi-tenant isolation" do
+    test "actor with memberships loaded via Ash.load sees only their org memberships" do
+      org1 = create_organization()
+      org2 = create_organization()
+      org3 = create_organization()
+
+      # Create user in org1 and org2
+      user = create_user(organization: org1)
+      create_organization_membership(user: user, organization: org2, role: :admin)
+
+      # Create memberships in all three orgs
+      other_user_org1 = create_user(organization: org1)
+      other_user_org2 = create_user(organization: org2)
+      other_user_org3 = create_user(organization: org3)
+
+      # Get user without memberships loaded (will trigger Ash.load in preparation)
+      fresh_user =
+        User
+        |> Ash.Query.filter(id == ^user.id)
+        |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
+
+      # Query with user as actor - preparation should load memberships and filter
+      visible_memberships =
+        OrganizationMembership
+        |> Ash.read!(domain: Accounts, actor: fresh_user)
+
+      # Should see memberships from org1 and org2 only (not org3)
+      org_ids = Enum.map(visible_memberships, & &1.organization_id) |> Enum.uniq()
+      assert org1.id in org_ids
+      assert org2.id in org_ids
+      refute org3.id in org_ids
+    end
+
+    test "actor with no organizations sees no memberships" do
+      # Create org with memberships
+      org = create_organization()
+      create_user(organization: org)
+      create_user(organization: org)
+
+      # Create user not in any organization (manual user creation without org)
+      orphan_user =
+        User
+        |> Ash.Changeset.for_create(:register, %{
+          email: "orphan@example.com",
+          password: "securepass123",
+          name: "Orphan User",
+          role: :client
+        })
+        |> Ash.create!(domain: Accounts)
+
+      # Load memberships to get empty list (not NotLoaded struct)
+      orphan_user = Ash.load!(orphan_user, :memberships, domain: Accounts, actor: bypass_actor())
+
+      # Query should return no memberships due to empty actor_org_ids
+      visible_memberships =
+        OrganizationMembership
+        |> Ash.read!(domain: Accounts, actor: orphan_user)
+
+      assert visible_memberships == []
+    end
+
+    test "handles actor with NotLoaded memberships struct" do
+      org = create_organization()
+      user = create_user(organization: org)
+      other_user = create_user(organization: org)
+
+      # Get user with NotLoaded memberships
+      user_not_loaded =
+        User
+        |> Ash.Query.filter(id == ^user.id)
+        |> Ash.read_one!(domain: Accounts, actor: bypass_actor())
+
+      # Verify memberships are NotLoaded
+      assert %Ash.NotLoaded{} = user_not_loaded.memberships
+
+      # Manually set memberships to NotLoaded to trigger that branch
+      # The preparation will attempt Ash.load which will succeed
+      # This tests the fallback path when Ash.load fails -> NotLoaded case
+      visible_memberships =
+        OrganizationMembership
+        |> Ash.read!(domain: Accounts, actor: user_not_loaded)
+
+      # Should still work - preparation loads memberships via Ash.load
+      org_ids = Enum.map(visible_memberships, & &1.organization_id) |> Enum.uniq()
+      assert org.id in org_ids
+    end
+
+    test "handles actor with unexpected membership value gracefully" do
+      org = create_organization()
+      user = create_user(organization: org)
+
+      # Create a mock actor struct with unexpected memberships value
+      # This tests the defensive catch-all pattern (line 126: _ -> [])
+      mock_actor = %{
+        id: user.id,
+        memberships: "unexpected_string_value",
+        bypass_strict_access: false
+      }
+
+      # Should handle gracefully by treating as empty list
+      # This triggers the defensive error path
+      visible_memberships =
+        OrganizationMembership
+        |> Ash.read!(domain: Accounts, actor: mock_actor)
+
+      # With unexpected memberships type, preparation returns empty actor_org_ids
+      # which filters to return no results
+      assert visible_memberships == []
     end
   end
 

@@ -6,11 +6,15 @@ defmodule PilatesOnPhx.Release do
   @app :pilates_on_phx
 
   def migrate do
+    IO.puts("==> Starting migration process")
     load_app()
 
     for repo <- repos() do
+      IO.puts("==> Running migrations for #{inspect(repo)}")
       {:ok, _, _} = Ecto.Migrator.with_repo(repo, &Ecto.Migrator.run(&1, :up, all: true))
     end
+
+    IO.puts("==> Migrations completed successfully")
   end
 
   def rollback(repo, version) do
@@ -23,8 +27,7 @@ defmodule PilatesOnPhx.Release do
   end
 
   defp load_app do
-    # Many platforms require SSL when connecting to the database
-    Application.ensure_all_started(:ssl)
-    Application.ensure_loaded(@app)
+    IO.puts("==> Loading application")
+    Application.load(@app)
   end
 end

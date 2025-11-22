@@ -2,7 +2,7 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
   use PilatesOnPhx.DataCase, async: true
 
   alias PilatesOnPhx.Accounts
-  alias PilatesOnPhx.Accounts.{User, Organization, OrganizationMembership, Token}
+  alias PilatesOnPhx.Accounts.{Organization, OrganizationMembership, Token, User}
   import PilatesOnPhx.AccountsFixtures
 
   require Ash.Query
@@ -199,7 +199,8 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
         |> Ash.update(domain: Accounts)
 
       # Reload owner with memberships for policy checks
-      owner = Ash.load!(owner, [:memberships, :organizations], domain: Accounts, actor: bypass_actor())
+      owner =
+        Ash.load!(owner, [:memberships, :organizations], domain: Accounts, actor: bypass_actor())
 
       # Owner can update member's role
       # Load organization with memberships for policy check
@@ -263,7 +264,8 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
         |> Ash.update(domain: Accounts, actor: bypass_actor())
 
       # Reload owner with memberships for policy checks
-      owner = Ash.load!(owner, [:memberships, :organizations], domain: Accounts, actor: bypass_actor())
+      owner =
+        Ash.load!(owner, [:memberships, :organizations], domain: Accounts, actor: bypass_actor())
 
       # Owner can see all users in organization
       org_users =
@@ -425,7 +427,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
                    current_password: old_password,
                    password: new_password,
                    password_confirmation: new_password
-                 }, actor: user)
+                 },
+                 actor: user
+               )
                |> Ash.update(domain: Accounts, actor: user)
     end
 
@@ -584,7 +588,11 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       # org2 membership remains as member (default)
 
       # Reload user with memberships for policy checks
-      multi_user = Ash.load!(multi_user, [:memberships, :organizations], domain: Accounts, actor: bypass_actor())
+      multi_user =
+        Ash.load!(multi_user, [:memberships, :organizations],
+          domain: Accounts,
+          actor: bypass_actor()
+        )
 
       # Can update org1 (as owner)
       assert {:ok, _updated} =
@@ -744,7 +752,9 @@ defmodule PilatesOnPhx.Accounts.AuthorizationPoliciesTest do
       OrganizationMembership
       |> Ash.Query.filter(user_id == ^user.id and organization_id == ^org.id)
       |> Ash.read!(domain: Accounts, actor: bypass_actor())
-      |> Enum.each(fn membership -> Ash.destroy!(membership, domain: Accounts, actor: bypass_actor()) end)
+      |> Enum.each(fn membership ->
+        Ash.destroy!(membership, domain: Accounts, actor: bypass_actor())
+      end)
 
       # Reload user without cached memberships
       user =
