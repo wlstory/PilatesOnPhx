@@ -110,7 +110,9 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
   def render(assigns) do
     ~H"""
     <div>
-      <h2 class="text-2xl font-bold mb-4">{@title}</h2>
+      <h2 class="text-2xl font-bold mb-4">
+        {@action == :new && "Create Studio" || @title}
+      </h2>
 
       <.form
         for={@form}
@@ -121,7 +123,7 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
       >
         <div class="form-control w-full mb-4">
           <label class="label">
-            <span class="label-text">Name</span>
+            <span class="label-text">Studio Name</span>
           </label>
           <input
             type="text"

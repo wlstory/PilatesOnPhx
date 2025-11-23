@@ -16,14 +16,14 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
          |> put_flash(:error, "You must be logged in to access this page")
          |> redirect(to: ~p"/")}
 
-      actor.role == :owner ->
-        {:ok, socket}
-
-      true ->
+      actor.role != :owner ->
         {:ok,
          socket
          |> put_flash(:error, "You must be an owner to access this page")
          |> redirect(to: ~p"/")}
+
+      true ->
+        {:ok, socket}
     end
   end
 
