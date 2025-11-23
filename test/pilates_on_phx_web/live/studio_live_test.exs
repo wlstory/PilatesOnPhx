@@ -253,7 +253,7 @@ defmodule PilatesOnPhxWeb.StudioLiveTest do
       |> render_submit()
 
       # Should redirect to studio detail or list page
-      assert_redirect(view, ~r{/studios})
+      assert_redirected(view, ~r{/studios})
 
       # Verify studio was created in database
       studios =
@@ -344,7 +344,7 @@ defmodule PilatesOnPhxWeb.StudioLiveTest do
       |> render_submit()
 
       # Should redirect to the new studio's detail page
-      assert_redirect(view, ~r/\/studios\/[a-f0-9\-]+/)
+      assert_redirected(view, ~r/\/studios\/[a-f0-9\-]+/)
     end
   end
 
