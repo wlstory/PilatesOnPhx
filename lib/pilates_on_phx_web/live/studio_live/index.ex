@@ -14,9 +14,9 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
         {:ok,
          socket
          |> put_flash(:error, "You must be logged in to access this page")
-         |> redirect(to: ~p"/")}
+         |> redirect(to: ~p"/sign-in")}
 
-      actor.role != :owner ->
+      not user_is_owner_in_any_org?(actor) ->
         {:ok,
          socket
          |> put_flash(:error, "You must be an owner to access this page")
@@ -24,6 +24,24 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
 
       true ->
         {:ok, socket}
+    end
+  end
+
+  defp user_is_owner_in_any_org?(user) do
+    # Check if user has loaded memberships
+    case Map.get(user, :memberships) do
+      memberships when is_list(memberships) ->
+        Enum.any?(memberships, fn m -> m.role == :owner end)
+
+      _ ->
+        # Memberships not loaded, try to load them
+        case Ash.load(user, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false) do
+          {:ok, loaded_user} ->
+            Enum.any?(loaded_user.memberships || [], fn m -> m.role == :owner end)
+
+          _ ->
+            false
+        end
     end
   end
 
