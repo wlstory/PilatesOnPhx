@@ -252,13 +252,14 @@ defmodule PilatesOnPhx.Studios.Studio do
       end
     end
 
-    # Validate special_hours structure and format
+    # Validate special_hours structure and format (including duplicate check and sorting)
     validate fn changeset, _context ->
       case Ash.Changeset.get_attribute(changeset, :special_hours) do
-        nil -> :ok
-        [] -> :ok
+        nil -> changeset
+        [] -> changeset
         hours when is_list(hours) ->
-          Enum.reduce_while(hours, :ok, fn entry, _acc ->
+          # First validate each entry
+          validation_result = Enum.reduce_while(hours, :ok, fn entry, _acc ->
             cond do
               not is_map(entry) ->
                 {:halt, {:error, field: :special_hours, message: "each entry must be a map"}}
@@ -277,8 +278,29 @@ defmodule PilatesOnPhx.Studios.Studio do
             end
           end)
 
+          # If validation passed, check for duplicate dates and sort
+          case validation_result do
+            :ok ->
+              # Check for duplicate dates
+              dates = Enum.map(hours, & &1["date"])
+              unique_dates = Enum.uniq(dates)
+
+              if length(dates) != length(unique_dates) do
+                Ash.Changeset.add_error(changeset, field: :special_hours, message: "duplicate dates found in special hours")
+              else
+                # Sort special_hours by date
+                sorted_hours = Enum.sort_by(hours, & &1["date"])
+
+                # Update the changeset with sorted hours
+                Ash.Changeset.force_change_attribute(changeset, :special_hours, sorted_hours)
+              end
+
+            error ->
+              Ash.Changeset.add_error(changeset, error)
+          end
+
         _ ->
-          {:error, field: :special_hours, message: "must be a list"}
+          Ash.Changeset.add_error(changeset, field: :special_hours, message: "must be a list")
       end
     end
   end
