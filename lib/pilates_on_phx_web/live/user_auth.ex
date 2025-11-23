@@ -12,7 +12,13 @@ defmodule PilatesOnPhxWeb.UserAuth do
 
         token ->
           case AshAuthentication.Jwt.peek(token) do
-            {:ok, %{"sub" => user_id}} ->
+            {:ok, %{"sub" => subject}} ->
+              # Extract user ID from subject (format: "user?id=<uuid>")
+              user_id =
+                subject
+                |> String.split("id=")
+                |> List.last()
+
               # Load the user with their memberships
               user =
                 PilatesOnPhx.Accounts.User

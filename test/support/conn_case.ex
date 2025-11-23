@@ -43,11 +43,11 @@ defmodule PilatesOnPhxWeb.ConnCase do
   """
   def log_in_user(conn, user) do
     # Generate a token for the user
-    {:ok, token} =
-      AshAuthentication.Jwt.token_for_user(user,
+    {:ok, token, _metadata} =
+      AshAuthentication.Jwt.token_for_user(user, %{
         domain: PilatesOnPhx.Accounts,
         purpose: :user
-      )
+      })
 
     conn
     |> Phoenix.ConnTest.init_test_session(%{})
