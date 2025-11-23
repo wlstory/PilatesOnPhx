@@ -28,24 +28,25 @@ defmodule PilatesOnPhxWeb.StudioLiveTest do
   # TEST SETUP AND HELPERS
   # ============================================================================
 
+  setup do
+    # Create organization with owner for most tests
+    scenario = create_organization_scenario(%{instructor_count: 1, client_count: 1})
+
+    # Create another organization for multi-tenant tests
+    other_org = create_organization()
+    other_owner = create_user(organization: other_org, organization_role: :owner)
+
+    %{
+      organization: scenario.organization,
+      owner: scenario.owner,
+      instructor: List.first(scenario.instructors),
+      client: List.first(scenario.clients),
+      other_org: other_org,
+      other_owner: other_owner
+    }
+  end
+
   describe "setup and authentication" do
-    setup do
-      # Create organization with owner for most tests
-      scenario = create_organization_scenario(instructor_count: 1, client_count: 1)
-
-      # Create another organization for multi-tenant tests
-      other_org = create_organization()
-      other_owner = create_user(organization: other_org, organization_role: :owner)
-
-      %{
-        organization: scenario.organization,
-        owner: scenario.owner,
-        instructor: List.first(scenario.instructors),
-        client: List.first(scenario.clients),
-        other_org: other_org,
-        other_owner: other_owner
-      }
-    end
 
     test "test fixtures work correctly", %{owner: owner, organization: org} do
       assert owner.id != nil
@@ -1089,19 +1090,7 @@ defmodule PilatesOnPhxWeb.StudioLiveTest do
   # HELPER FUNCTIONS
   # ============================================================================
 
-  defp log_in_user(conn, user) do
-    # Implementation will depend on your authentication setup
-    # This is a placeholder - you'll need to implement actual session setup
-    # For AshAuthentication, you might use:
-    # - Generate token
-    # - Put token in session
-    # - Or use test helper from AshAuthentication.Phoenix
-
-    # For now, return conn with actor set (needs actual implementation)
-    conn
-    |> Phoenix.ConnTest.init_test_session(%{})
-    |> Plug.Conn.assign(:current_user, user)
-  end
+  # Note: log_in_user/2 is now imported from PilatesOnPhxWeb.ConnCase
 
   defp assert_redirected(view, path_or_matcher) when is_function(path_or_matcher) do
     # For checking flash messages after redirect

@@ -3,7 +3,6 @@ defmodule PilatesOnPhxWeb.UserAuth do
   LiveView authentication hooks for user session management.
   """
   import Phoenix.Component
-  import Phoenix.LiveView
 
   def on_mount(:default, _params, session, socket) do
     socket =

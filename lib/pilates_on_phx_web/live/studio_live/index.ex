@@ -9,13 +9,21 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
   def mount(_params, _session, socket) do
     actor = socket.assigns[:current_user]
 
-    if actor && actor.role == :owner do
-      {:ok, socket}
-    else
-      {:ok,
-       socket
-       |> put_flash(:error, "You must be an owner to access this page")
-       |> redirect(to: ~p"/")}
+    cond do
+      is_nil(actor) ->
+        {:ok,
+         socket
+         |> put_flash(:error, "You must be logged in to access this page")
+         |> redirect(to: ~p"/")}
+
+      actor.role == :owner ->
+        {:ok, socket}
+
+      true ->
+        {:ok,
+         socket
+         |> put_flash(:error, "You must be an owner to access this page")
+         |> redirect(to: ~p"/")}
     end
   end
 
