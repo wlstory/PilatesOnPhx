@@ -393,6 +393,61 @@ defmodule PilatesOnPhxWeb.CoreComponents do
   end
 
   @doc """
+  Renders a modal using DaisyUI's modal component.
+
+  ## Examples
+
+      <.modal id="confirm-modal">
+        This is a modal
+      </.modal>
+
+      <.modal id="confirm" on_cancel={JS.navigate(~p"/posts")}>
+        This is another modal
+      </.modal>
+  """
+  attr :id, :string, required: true
+  attr :show, :boolean, default: false
+  attr :on_cancel, JS, default: %JS{}
+  slot :inner_block, required: true
+
+  def modal(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      phx-mounted={@show && show_modal(@id)}
+      phx-remove={hide_modal(@id)}
+      data-cancel={JS.exec(@on_cancel, "phx-remove")}
+      class="modal"
+    >
+      <div class="modal-box">
+        <button
+          phx-click={JS.exec("data-cancel", to: "##{@id}")}
+          type="button"
+          class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+          aria-label={gettext("close")}
+        >
+          ✕
+        </button>
+        {render_slot(@inner_block)}
+      </div>
+      <div class="modal-backdrop" phx-click={JS.exec("data-cancel", to: "##{@id}")}></div>
+    </div>
+    """
+  end
+
+  def show_modal(js \\ %JS{}, id) when is_binary(id) do
+    js
+    |> JS.set_attribute({"open", "true"}, to: "##{id}")
+    |> JS.add_class("modal-open", to: "##{id}")
+  end
+
+  def hide_modal(js \\ %JS{}, id) do
+    js
+    |> JS.remove_attribute("open", to: "##{id}")
+    |> JS.remove_class("modal-open", to: "##{id}")
+  end
+
+  @doc """
   Renders a [Heroicon](https://heroicons.com).
 
   Heroicons come in three styles – outline, solid, and mini.

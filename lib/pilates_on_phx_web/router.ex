@@ -1,5 +1,6 @@
 defmodule PilatesOnPhxWeb.Router do
   use PilatesOnPhxWeb, :router
+  use AshAuthentication.Phoenix.Router
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -18,10 +19,24 @@ defmodule PilatesOnPhxWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :require_authenticated_user do
+    plug :fetch_current_user
+    plug :require_user
+  end
+
   scope "/", PilatesOnPhxWeb do
     pipe_through :browser
 
     get "/", PageController, :home
+  end
+
+  scope "/", PilatesOnPhxWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live "/studios", StudioLive.Index, :index
+    live "/studios/new", StudioLive.Index, :new
+    live "/studios/:id/edit", StudioLive.Index, :edit
+    live "/studios/:id", StudioLive.Show, :show
   end
 
   # Other scopes may use custom stacks.
