@@ -385,7 +385,7 @@ defmodule PilatesOnPhx.Studios.Studio do
 
         # Calculate for each studio
         Enum.map(studios, fn studio ->
-          {studio, calculate_is_open(studio, check_time)}
+          calculate_is_open(studio, check_time)
         end)
       end
     end
