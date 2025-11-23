@@ -71,8 +71,11 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
   defp save_studio(socket, :new, studio_params) do
     actor = socket.assigns.current_user
 
+    # Clean params - remove empty strings to let Ash defaults apply
+    cleaned_params = reject_empty_values(studio_params)
+
     case PilatesOnPhx.Studios.Studio
-         |> Ash.Changeset.for_create(:create, studio_params, actor: actor)
+         |> Ash.Changeset.for_create(:create, cleaned_params, actor: actor)
          |> Ash.create(domain: PilatesOnPhx.Studios) do
       {:ok, studio} ->
         notify_parent({:saved, studio})
@@ -87,6 +90,12 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
          |> put_flash(:error, "Failed to create studio")
          |> assign_form(nil, studio_params)}
     end
+  end
+
+  defp reject_empty_values(params) when is_map(params) do
+    params
+    |> Enum.reject(fn {_key, value} -> value == "" or value == nil end)
+    |> Enum.into(%{})
   end
 
   defp assign_form(socket, studio, params \\ %{}) do
