@@ -359,7 +359,7 @@ defmodule PilatesOnPhx.Studios.Studio do
   end
 
   calculations do
-    calculate :is_open?, :boolean, expr(false) do
+    calculate :is_open?, :boolean do
       public? true
       description "Calculates whether the studio is currently open based on regular_hours, special_hours, and timezone"
 
@@ -395,7 +395,7 @@ defmodule PilatesOnPhx.Studios.Studio do
   end
 
   # Check if there are special hours for the given date
-  defp check_special_hours(special_hours, date, _studio_time) when is_nil(special_hours) or special_hours == [] do
+  defp check_special_hours(special_hours, _date, _studio_time) when is_nil(special_hours) or special_hours == [] do
     :no_special_hours
   end
 
@@ -422,7 +422,7 @@ defmodule PilatesOnPhx.Studios.Studio do
   end
 
   # Check regular hours for the given day
-  defp check_regular_hours(regular_hours, studio_time) when is_nil(regular_hours) or regular_hours == %{} do
+  defp check_regular_hours(regular_hours, _studio_time) when is_nil(regular_hours) or regular_hours == %{} do
     false
   end
 
