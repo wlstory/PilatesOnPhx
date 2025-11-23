@@ -9,21 +9,15 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
   def mount(_params, _session, socket) do
     actor = socket.assigns[:current_user]
 
-    cond do
-      is_nil(actor) ->
-        {:ok,
-         socket
-         |> put_flash(:error, "You must be logged in to access this page")
-         |> redirect(to: ~p"/")}
-
-      not user_is_owner_in_any_org?(actor) ->
-        {:ok,
-         socket
-         |> put_flash(:error, "You must be an owner to access this page")
-         |> redirect(to: ~p"/")}
-
-      true ->
-        {:ok, socket}
+    if is_nil(actor) do
+      {:ok,
+       socket
+       |> put_flash(:error, "You must be logged in to access this page")
+       |> redirect(to: ~p"/")}
+    else
+      # All authenticated users can view studios list (filtered by their organizations)
+      # Owner-only actions are protected in apply_action
+      {:ok, socket}
     end
   end
 
@@ -77,15 +71,22 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
   defp apply_action(socket, :new, _params) do
     actor = socket.assigns.current_user
 
-    studios =
-      PilatesOnPhx.Studios.Studio
-      |> Ash.Query.sort(name: :asc)
-      |> Ash.read!(actor: actor, domain: PilatesOnPhx.Studios)
+    # Only owners can create studios
+    if not user_is_owner_in_any_org?(actor) do
+      socket
+      |> put_flash(:error, "You must be an owner to create studios")
+      |> push_navigate(to: ~p"/studios")
+    else
+      studios =
+        PilatesOnPhx.Studios.Studio
+        |> Ash.Query.sort(name: :asc)
+        |> Ash.read!(actor: actor, domain: PilatesOnPhx.Studios)
 
-    socket
-    |> assign(:page_title, "New Studio")
-    |> assign(:studio, nil)
-    |> assign(:studios, studios)
+      socket
+      |> assign(:page_title, "New Studio")
+      |> assign(:studio, nil)
+      |> assign(:studios, studios)
+    end
   end
 
   defp apply_action(socket, :index, _params) do
@@ -184,7 +185,7 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
     <div class="container mx-auto px-4 py-8">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">Studios</h1>
-        <.link navigate={~p"/studios/new"} class="btn btn-primary">
+        <.link :if={user_is_owner_in_any_org?(@current_user)} navigate={~p"/studios/new"} class="btn btn-primary">
           New Studio
         </.link>
       </div>
@@ -238,7 +239,7 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
                 </span>
               </td>
               <td class="text-right">
-                <div class="flex gap-2 justify-end">
+                <div :if={user_is_owner_in_any_org?(@current_user)} class="flex gap-2 justify-end">
                   <.link navigate={~p"/studios/#{studio}/edit"} class="btn btn-sm btn-ghost">
                     Edit
                   </.link>
