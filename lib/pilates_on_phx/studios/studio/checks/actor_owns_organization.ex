@@ -23,15 +23,12 @@ defmodule PilatesOnPhx.Studios.Studio.Checks.ActorOwnsOrganization do
         Ash.Changeset.get_argument(changeset, :organization_id)
 
     if organization_id do
-      # Load the organization and check if actor is an owner
-      case PilatesOnPhx.Accounts.Organization
-           |> Ash.Query.filter(id == ^organization_id)
-           |> Ash.Query.load(:memberships)
-           |> Ash.read_one(domain: PilatesOnPhx.Accounts) do
-        {:ok, organization} when not is_nil(organization) ->
-          # Check if actor is an owner in this organization
-          Enum.any?(organization.memberships, fn m ->
-            m.user_id == actor.id and m.role == :owner
+      # Check if actor has a membership with owner role in this organization
+      # Actor should have memberships loaded from UserAuth
+      case Map.get(actor, :memberships) do
+        memberships when is_list(memberships) ->
+          Enum.any?(memberships, fn m ->
+            m.organization_id == organization_id and m.role == :owner
           end)
 
         _ ->
