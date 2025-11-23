@@ -11,7 +11,9 @@ defmodule PilatesOnPhx.Studios.Studio do
   - `:address` - Physical address of the studio
   - `:timezone` - IANA timezone for scheduling (default: "America/New_York")
   - `:max_capacity` - Maximum total capacity across all rooms (default: 50)
-  - `:operating_hours` - Map of day-of-week to hours (e.g., %{"mon" => "6:00-20:00"})
+  - `:operating_hours` - DEPRECATED: Map of day-of-week to hours (e.g., %{"mon" => "6:00-20:00"})
+  - `:regular_hours` - Map of weekday to open/close times or "closed" (e.g., %{"monday" => %{"open" => "06:00", "close" => "20:00"}})
+  - `:special_hours` - List of special hours for holidays/events (e.g., [%{"date" => "2025-12-25", "closed" => true, "reason" => "Christmas"}])
   - `:settings` - JSON map for studio-specific settings (wifi, parking, amenities)
   - `:active` - Whether the studio is currently active
 
@@ -91,6 +93,18 @@ defmodule PilatesOnPhx.Studios.Studio do
         "sun" => "8:00-16:00"
       }
 
+      public? true
+    end
+
+    attribute :regular_hours, :map do
+      allow_nil? true
+      default %{}
+      public? true
+    end
+
+    attribute :special_hours, {:array, :map} do
+      allow_nil? true
+      default []
       public? true
     end
 
@@ -204,7 +218,269 @@ defmodule PilatesOnPhx.Studios.Studio do
           end
       end
     end
+
+    # Validate regular_hours structure and format
+    validate fn changeset, _context ->
+      case Ash.Changeset.get_attribute(changeset, :regular_hours) do
+        nil -> :ok
+        hours when hours == %{} -> :ok
+        hours when is_map(hours) ->
+          valid_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+          # Validate each day's hours
+          Enum.reduce_while(hours, :ok, fn {day, value}, _acc ->
+            cond do
+              day not in valid_days ->
+                {:halt, {:error, field: :regular_hours, message: "contains invalid day name: #{day}. Must be one of: #{Enum.join(valid_days, ", ")}"}}
+
+              value == "closed" ->
+                {:cont, :ok}
+
+              is_map(value) ->
+                case validate_hours_map(value, day) do
+                  :ok -> {:cont, :ok}
+                  error -> {:halt, error}
+                end
+
+              true ->
+                {:halt, {:error, field: :regular_hours, message: "#{day} must be either 'closed' or a map with 'open' and 'close' keys"}}
+            end
+          end)
+
+        _ ->
+          {:error, field: :regular_hours, message: "must be a map"}
+      end
+    end
+
+    # Validate special_hours structure and format
+    validate fn changeset, _context ->
+      case Ash.Changeset.get_attribute(changeset, :special_hours) do
+        nil -> :ok
+        [] -> :ok
+        hours when is_list(hours) ->
+          Enum.reduce_while(hours, :ok, fn entry, _acc ->
+            cond do
+              not is_map(entry) ->
+                {:halt, {:error, field: :special_hours, message: "each entry must be a map"}}
+
+              not Map.has_key?(entry, "date") ->
+                {:halt, {:error, field: :special_hours, message: "each entry must have a 'date' field"}}
+
+              not Map.has_key?(entry, "reason") ->
+                {:halt, {:error, field: :special_hours, message: "each entry must have a 'reason' field"}}
+
+              true ->
+                case validate_special_hours_entry(entry) do
+                  :ok -> {:cont, :ok}
+                  error -> {:halt, error}
+                end
+            end
+          end)
+
+        _ ->
+          {:error, field: :special_hours, message: "must be a list"}
+      end
+    end
   end
+
+  # Helper function to validate hours map (open/close times)
+  defp validate_hours_map(hours_map, day) do
+    cond do
+      not Map.has_key?(hours_map, "open") ->
+        {:error, field: :regular_hours, message: "#{day} is missing 'open' time"}
+
+      not Map.has_key?(hours_map, "close") ->
+        {:error, field: :regular_hours, message: "#{day} is missing 'close' time"}
+
+      true ->
+        with :ok <- validate_time_format(hours_map["open"], "#{day}.open"),
+             :ok <- validate_time_format(hours_map["close"], "#{day}.close") do
+          :ok
+        end
+    end
+  end
+
+  # Helper function to validate time format (HH:MM)
+  defp validate_time_format(time, field) do
+    case Regex.match?(~r/^([01]\d|2[0-3]):([0-5]\d)$/, time) do
+      true -> :ok
+      false -> {:error, field: :regular_hours, message: "#{field} must be in HH:MM format (00:00 to 23:59), got: #{time}"}
+    end
+  end
+
+  # Helper function to validate special hours entry
+  defp validate_special_hours_entry(entry) do
+    with :ok <- validate_date_format(entry["date"]),
+         :ok <- validate_special_hours_consistency(entry) do
+      # If entry has open/close times, validate their format
+      if Map.has_key?(entry, "open") and Map.has_key?(entry, "close") do
+        with :ok <- validate_special_time_format(entry["open"], "open"),
+             :ok <- validate_special_time_format(entry["close"], "close") do
+          :ok
+        end
+      else
+        :ok
+      end
+    end
+  end
+
+  # Helper function to validate date format (ISO 8601: YYYY-MM-DD)
+  defp validate_date_format(date) do
+    case Regex.match?(~r/^\d{4}-\d{2}-\d{2}$/, date) do
+      true -> :ok
+      false -> {:error, field: :special_hours, message: "date must be in YYYY-MM-DD format (ISO 8601), got: #{date}"}
+    end
+  end
+
+  # Helper function to validate special hours time format
+  defp validate_special_time_format(time, field) do
+    case Regex.match?(~r/^([01]\d|2[0-3]):([0-5]\d)$/, time) do
+      true -> :ok
+      false -> {:error, field: :special_hours, message: "#{field} must be in HH:MM format (00:00 to 23:59), got: #{time}"}
+    end
+  end
+
+  # Helper function to validate consistency (closed vs open/close)
+  defp validate_special_hours_consistency(entry) do
+    closed = Map.get(entry, "closed", false)
+    has_open = Map.has_key?(entry, "open")
+    has_close = Map.has_key?(entry, "close")
+
+    cond do
+      closed and (has_open or has_close) ->
+        {:error, field: :special_hours, message: "entry marked as closed cannot have open/close times"}
+
+      not closed and (has_open or has_close) and not (has_open and has_close) ->
+        {:error, field: :special_hours, message: "entry must have both open and close times, or be marked as closed"}
+
+      true ->
+        :ok
+    end
+  end
+
+  calculations do
+    calculate :is_open?, :boolean, expr(false) do
+      public? true
+      description "Calculates whether the studio is currently open based on regular_hours, special_hours, and timezone"
+
+      calculation fn studios, _context ->
+        # Calculate for each studio
+        Enum.map(studios, fn studio ->
+          {studio, calculate_is_open(studio, DateTime.utc_now())}
+        end)
+      end
+    end
+  end
+
+  # Helper function to calculate if a studio is open at a given datetime
+  defp calculate_is_open(studio, datetime) do
+    # Get studio timezone
+    timezone = studio.timezone || "America/New_York"
+
+    # Convert UTC datetime to studio's timezone
+    studio_time = DateTime.shift_zone!(datetime, timezone)
+
+    # Get the date in the studio's timezone
+    studio_date = Date.to_iso8601(DateTime.to_date(studio_time))
+
+    # Check special hours first (they override regular hours)
+    case check_special_hours(studio.special_hours, studio_date, studio_time) do
+      {:special, is_open} ->
+        is_open
+
+      :no_special_hours ->
+        # Fall back to regular hours
+        check_regular_hours(studio.regular_hours, studio_time)
+    end
+  end
+
+  # Check if there are special hours for the given date
+  defp check_special_hours(special_hours, date, _studio_time) when is_nil(special_hours) or special_hours == [] do
+    :no_special_hours
+  end
+
+  defp check_special_hours(special_hours, date, studio_time) do
+    # Find special hours for this date
+    case Enum.find(special_hours, fn entry -> entry["date"] == date end) do
+      nil ->
+        :no_special_hours
+
+      entry ->
+        # If marked as closed, return false
+        if Map.get(entry, "closed", false) do
+          {:special, false}
+        else
+          # Check if open/close times are present
+          if Map.has_key?(entry, "open") and Map.has_key?(entry, "close") do
+            {:special, time_in_range?(studio_time, entry["open"], entry["close"])}
+          else
+            # No times specified, assume closed
+            {:special, false}
+          end
+        end
+    end
+  end
+
+  # Check regular hours for the given day
+  defp check_regular_hours(regular_hours, studio_time) when is_nil(regular_hours) or regular_hours == %{} do
+    false
+  end
+
+  defp check_regular_hours(regular_hours, studio_time) do
+    # Get the day of week (lowercase)
+    day_name = studio_time |> DateTime.to_date() |> Date.day_of_week() |> day_of_week_to_name()
+
+    # Get hours for this day
+    case Map.get(regular_hours, day_name) do
+      nil ->
+        false
+
+      "closed" ->
+        false
+
+      hours when is_map(hours) ->
+        open_time = hours["open"]
+        close_time = hours["close"]
+        time_in_range?(studio_time, open_time, close_time)
+
+      _ ->
+        false
+    end
+  end
+
+  # Check if a datetime is within a time range (handles overnight hours)
+  defp time_in_range?(datetime, open_str, close_str) do
+    current_time = {datetime.hour, datetime.minute}
+    {open_hour, open_min} = parse_time(open_str)
+    {close_hour, close_min} = parse_time(close_str)
+
+    open_time = {open_hour, open_min}
+    close_time = {close_hour, close_min}
+
+    # Handle overnight hours (e.g., 22:00 to 02:00)
+    if close_time < open_time do
+      # Overnight: open if >= open_time OR < close_time
+      current_time >= open_time or current_time < close_time
+    else
+      # Normal hours: open if >= open_time AND < close_time
+      current_time >= open_time and current_time < close_time
+    end
+  end
+
+  # Parse HH:MM string to {hour, minute} tuple
+  defp parse_time(time_str) do
+    [hour_str, min_str] = String.split(time_str, ":")
+    {String.to_integer(hour_str), String.to_integer(min_str)}
+  end
+
+  # Convert day of week number to name
+  defp day_of_week_to_name(1), do: "monday"
+  defp day_of_week_to_name(2), do: "tuesday"
+  defp day_of_week_to_name(3), do: "wednesday"
+  defp day_of_week_to_name(4), do: "thursday"
+  defp day_of_week_to_name(5), do: "friday"
+  defp day_of_week_to_name(6), do: "saturday"
+  defp day_of_week_to_name(7), do: "sunday"
 
   actions do
     defaults [:read]
@@ -216,6 +492,8 @@ defmodule PilatesOnPhx.Studios.Studio do
         :timezone,
         :max_capacity,
         :operating_hours,
+        :regular_hours,
+        :special_hours,
         :settings,
         :active,
         :organization_id
@@ -228,7 +506,7 @@ defmodule PilatesOnPhx.Studios.Studio do
     end
 
     update :update do
-      accept [:name, :address, :timezone, :max_capacity, :operating_hours, :settings, :active]
+      accept [:name, :address, :timezone, :max_capacity, :operating_hours, :regular_hours, :special_hours, :settings, :active]
       require_atomic? false
     end
 
