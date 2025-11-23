@@ -35,6 +35,11 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
   defp apply_action(socket, :edit, %{"id" => id}) do
     actor = socket.assigns.current_user
 
+    studios =
+      PilatesOnPhx.Studios.Studio
+      |> Ash.Query.sort(name: :asc)
+      |> Ash.read!(actor: actor, domain: PilatesOnPhx.Studios)
+
     case PilatesOnPhx.Studios.Studio
          |> Ash.Query.filter(id == ^id)
          |> Ash.read_one(actor: actor, domain: PilatesOnPhx.Studios) do
@@ -42,6 +47,7 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
         socket
         |> assign(:page_title, "Edit Studio")
         |> assign(:studio, studio)
+        |> assign(:studios, studios)
 
       _ ->
         socket
@@ -51,9 +57,17 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
   end
 
   defp apply_action(socket, :new, _params) do
+    actor = socket.assigns.current_user
+
+    studios =
+      PilatesOnPhx.Studios.Studio
+      |> Ash.Query.sort(name: :asc)
+      |> Ash.read!(actor: actor, domain: PilatesOnPhx.Studios)
+
     socket
     |> assign(:page_title, "New Studio")
     |> assign(:studio, nil)
+    |> assign(:studios, studios)
   end
 
   defp apply_action(socket, :index, _params) do
