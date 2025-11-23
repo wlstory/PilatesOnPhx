@@ -14,7 +14,7 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
         {:ok,
          socket
          |> put_flash(:error, "You must be logged in to access this page")
-         |> redirect(to: ~p"/sign-in")}
+         |> redirect(to: ~p"/")}
 
       not user_is_owner_in_any_org?(actor) ->
         {:ok,
