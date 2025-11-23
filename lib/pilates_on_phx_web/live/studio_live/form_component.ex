@@ -78,7 +78,10 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
         notify_parent({:saved, studio})
         {:noreply, socket}
 
-      {:error, _changeset} ->
+      {:error, changeset} ->
+        require Logger
+        Logger.error("Failed to create studio: #{inspect(changeset)}")
+
         {:noreply,
          socket
          |> put_flash(:error, "Failed to create studio")
@@ -139,7 +142,7 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
           <input
             type="text"
             name="studio[name]"
-            value={@form["name"].value}
+            value={@form["name"].value || ""}
             class="input input-bordered w-full"
             required
           />
@@ -152,7 +155,7 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
           <input
             type="text"
             name="studio[address]"
-            value={@form["address"].value}
+            value={@form["address"].value || ""}
             class="input input-bordered w-full"
             required
           />
@@ -163,18 +166,18 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
             <span class="label-text">Timezone</span>
           </label>
           <select name="studio[timezone]" class="select select-bordered w-full">
-            <option value="America/New_York" selected={@form["timezone"].value == "America/New_York"}>
+            <option value="America/New_York" selected={(@form["timezone"].value || "America/New_York") == "America/New_York"}>
               Eastern Time (America/New_York)
             </option>
-            <option value="America/Chicago" selected={@form["timezone"].value == "America/Chicago"}>
+            <option value="America/Chicago" selected={(@form["timezone"].value || "") == "America/Chicago"}>
               Central Time (America/Chicago)
             </option>
-            <option value="America/Denver" selected={@form["timezone"].value == "America/Denver"}>
+            <option value="America/Denver" selected={(@form["timezone"].value || "") == "America/Denver"}>
               Mountain Time (America/Denver)
             </option>
             <option
               value="America/Los_Angeles"
-              selected={@form["timezone"].value == "America/Los_Angeles"}
+              selected={(@form["timezone"].value || "") == "America/Los_Angeles"}
             >
               Pacific Time (America/Los_Angeles)
             </option>
@@ -188,7 +191,7 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
           <input
             type="number"
             name="studio[max_capacity]"
-            value={@form["max_capacity"].value}
+            value={@form["max_capacity"].value || ""}
             class="input input-bordered w-full"
             min="1"
             max="500"
