@@ -268,12 +268,100 @@ end
 - Automated reminder system
 - Attendance tracking and check-in
 
+## Thin Slice Development Methodology
+
+This project follows the **Thin Slice** approach to feature development, based on Thoughtworks' vertical slicing methodology.
+
+### Core Principle
+
+Build features **vertically** through all system layers (UI → Business Logic → Data) in minimal, independently testable increments. Each slice delivers complete, working user value.
+
+### What is a Thin Slice?
+
+A thin slice in PilatesOnPhx is a **minimal, end-to-end feature** that:
+
+1. **Spans All Layers Vertically**:
+   - UI Layer: LiveView templates with DaisyUI components
+   - Controller/LiveView Layer: Event handlers, socket assigns
+   - Domain Layer: Ash resources, actions, validations
+   - Data Layer: PostgreSQL schema, migrations
+   - Authorization: Ash policies for multi-tenant security
+
+2. **Delivers Working User Value**:
+   - Users can perform a complete task (even if simplified)
+   - Produces visible, testable outcome
+   - Could theoretically be deployed to production
+
+3. **Is Independently Testable**:
+   - Has clear acceptance criteria
+   - Can be validated end-to-end
+   - Passes all quality gates (85%+ coverage, authorization tests)
+
+4. **Takes 1-5 Days to Complete**:
+   - Small enough to finish in a single sprint
+   - Large enough to be meaningful
+   - Typically 1-3 Linear issues per slice
+
+### Key Benefits
+
+- ✅ **Early Integration Testing**: Phoenix LiveView + Ash resources + PostgreSQL tested together from day one
+- ✅ **Reduced Risk**: Discover authorization policy issues, multi-tenant bugs, or data model problems immediately
+- ✅ **Better Feedback Loops**: Stakeholders see working UI instead of "backend is 80% done"
+- ✅ **Flexible Prioritization**: Can pivot roadmap without breaking half-built horizontal layers
+- ✅ **Natural TDD Flow**: Red-Green-Refactor works perfectly with thin slices
+
+### Anti-Patterns to Avoid
+
+- ❌ **Too Horizontal**: "Build all Ash resources for Studios domain"
+- ❌ **Too Large**: "Complete entire class booking system"
+- ❌ **Too Technical**: "Add PostgreSQL indexes for performance"
+- ❌ **No User Value**: "Refactor Studio resource validations"
+
+### Slicing Techniques
+
+1. **Workflow Steps**: Break features into sequential user actions
+   - Example: Browse classes → Book class → View bookings → Cancel booking
+
+2. **Happy Path → Edge Cases → Error Handling**
+   - Example: Book available class → Handle waitlist → Handle package credits
+
+3. **CRUD Operations Separately**
+   - Example: Create client → View clients → Edit client → Deactivate client
+
+4. **Role-Based Slices**
+   - Example: Owner views studios → Owner creates studio → Instructor views classes
+
+5. **Data Complexity Progression**
+   - Example: Single-use credit → Multi-class package → Expiring packages → Unlimited membership
+
+### Linear Issue Format for Thin Slices
+
+**Title Format**: `[Domain] User can [action] [object] ([scope constraint])`
+
+Examples:
+- `[Booking] Client can book an available class (happy path only)`
+- `[Studio] Owner can set regular business hours (Mon-Sun)`
+- `[Client] Instructor can view client attendance history (read-only)`
+
+**Required Sections**:
+- User Story: As a [persona], I can [action], so that [benefit]
+- Scope: What's included / excluded (future work)
+- Use Cases: Gherkin scenarios (happy path, edge cases, error cases)
+- Acceptance Criteria: Testable, specific criteria
+- Technical Implementation: Reusable modules, dependencies, testing strategy
+- Definition of Done: Quality gates and deployment readiness
+
+### Reference Documentation
+
+For comprehensive thin slicing guidelines, see Linear documentation or consult the `catalio-product-manager` agent.
+
 ## Linear Integration
 
 This project uses Linear for issue tracking and project management. The `.claude` directory includes:
 
 - MCP Linear server configuration
 - SDLC orchestrator agent for structured development workflows
+- Product manager agent for thin slice creation
 - Hooks for quality gates and automated commits
 
 Use the `/sdlc` command with a Linear issue ID to initiate a structured development workflow.
