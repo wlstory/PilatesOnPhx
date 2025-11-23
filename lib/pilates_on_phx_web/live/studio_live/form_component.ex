@@ -6,33 +6,37 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
   @impl true
   def update(%{studio: studio} = assigns, socket) do
     actor = assigns.current_user
-
-    # Get the user's organizations where they are an owner
-    organizations =
-      case Ash.load(actor, :organizations, domain: PilatesOnPhx.Accounts, authorize?: false) do
-        {:ok, loaded_actor} ->
-          # Filter to only organizations where user is owner
-          Enum.filter(loaded_actor.organizations || [], fn org ->
-            case Ash.load(org, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false) do
-              {:ok, loaded_org} ->
-                Enum.any?(loaded_org.memberships, fn m ->
-                  m.user_id == actor.id && m.role == :owner
-                end)
-
-              _ ->
-                false
-            end
-          end)
-
-        _ ->
-          []
-      end
+    organizations = get_user_owner_organizations(actor)
 
     {:ok,
      socket
      |> assign(assigns)
      |> assign(:organizations, organizations)
      |> assign_form(studio)}
+  end
+
+  defp get_user_owner_organizations(actor) do
+    case Ash.load(actor, :organizations, domain: PilatesOnPhx.Accounts, authorize?: false) do
+      {:ok, loaded_actor} ->
+        loaded_actor.organizations
+        |> List.wrap()
+        |> Enum.filter(&user_is_owner_of_org?(&1, actor.id))
+
+      _ ->
+        []
+    end
+  end
+
+  defp user_is_owner_of_org?(org, user_id) do
+    case Ash.load(org, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false) do
+      {:ok, loaded_org} ->
+        Enum.any?(loaded_org.memberships, fn m ->
+          m.user_id == user_id && m.role == :owner
+        end)
+
+      _ ->
+        false
+    end
   end
 
   @impl true
@@ -111,7 +115,7 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
     ~H"""
     <div>
       <h2 class="text-2xl font-bold mb-4">
-        {@action == :new && "Create Studio" || @title}
+        {(@action == :new && "Create Studio") || @title}
       </h2>
 
       <.form
@@ -161,7 +165,10 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
             <option value="America/Denver" selected={@form["timezone"].value == "America/Denver"}>
               Mountain Time (America/Denver)
             </option>
-            <option value="America/Los_Angeles" selected={@form["timezone"].value == "America/Los_Angeles"}>
+            <option
+              value="America/Los_Angeles"
+              selected={@form["timezone"].value == "America/Los_Angeles"}
+            >
               Pacific Time (America/Los_Angeles)
             </option>
           </select>

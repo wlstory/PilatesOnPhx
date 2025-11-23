@@ -179,7 +179,7 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
       >
         <.live_component
           module={PilatesOnPhxWeb.StudioLive.FormComponent}
-          id={@studio && @studio.id || :new}
+          id={(@studio && @studio.id) || :new}
           title={@page_title}
           action={@live_action}
           studio={@studio}

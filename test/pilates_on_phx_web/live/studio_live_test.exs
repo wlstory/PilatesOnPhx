@@ -47,7 +47,6 @@ defmodule PilatesOnPhxWeb.StudioLiveTest do
   end
 
   describe "setup and authentication" do
-
     test "test fixtures work correctly", %{owner: owner, organization: org} do
       assert owner.id != nil
       assert org.id != nil
@@ -821,9 +820,7 @@ defmodule PilatesOnPhxWeb.StudioLiveTest do
       for org <- [org_a, org_b] do
         membership =
           PilatesOnPhx.Accounts.OrganizationMembership
-          |> Ash.Query.filter(
-            user_id == ^multi_org_user.id and organization_id == ^org.id
-          )
+          |> Ash.Query.filter(user_id == ^multi_org_user.id and organization_id == ^org.id)
           |> Ash.read_one!(domain: PilatesOnPhx.Accounts, actor: bypass_actor())
 
         membership
