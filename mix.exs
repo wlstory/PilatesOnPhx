@@ -133,6 +133,7 @@ defmodule PilatesOnPhx.MixProject do
       {:picosat_elixir, "~> 0.2"},
       {:req, "~> 0.5"},
       {:sourceror, "~> 1.8"},
+      {:tzdata, "~> 1.1"},
       {:usage_rules, "~> 0.1.25"},
 
       # Assets

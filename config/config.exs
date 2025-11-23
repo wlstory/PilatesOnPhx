@@ -66,6 +66,9 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Configure timezone database
+config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
+
 # Configure Spark formatter for Ash DSL
 config :spark, :formatter,
   remove_parens?: true,

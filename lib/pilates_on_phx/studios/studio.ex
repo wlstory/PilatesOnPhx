@@ -374,7 +374,6 @@ defmodule PilatesOnPhx.Studios.Studio do
       # Support optional arguments for specifying time
       argument :at, :datetime do
         allow_nil? true
-        description "Optional datetime to check if studio is open at that time (defaults to current time)"
       end
 
       calculation fn studios, context ->
