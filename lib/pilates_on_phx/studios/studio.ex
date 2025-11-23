@@ -313,7 +313,9 @@ defmodule PilatesOnPhx.Studios.Studio do
     with :ok <- validate_date_format(entry["date"]),
          :ok <- validate_special_hours_consistency(entry) do
       # If entry has open/close times, validate their format
-      if Map.has_key?(entry, "open") and Map.has_key?(entry, "close") do
+      # Only validate if values are not nil (closed entries won't have these)
+      if Map.has_key?(entry, "open") and Map.has_key?(entry, "close") and
+         entry["open"] != nil and entry["close"] != nil do
         with :ok <- validate_special_time_format(entry["open"], "open"),
              :ok <- validate_special_time_format(entry["close"], "close") do
           :ok
@@ -343,14 +345,20 @@ defmodule PilatesOnPhx.Studios.Studio do
   # Helper function to validate consistency (closed vs open/close)
   defp validate_special_hours_consistency(entry) do
     closed = Map.get(entry, "closed", false)
-    has_open = Map.has_key?(entry, "open")
-    has_close = Map.has_key?(entry, "close")
+    open_value = Map.get(entry, "open")
+    close_value = Map.get(entry, "close")
+
+    # Check if there are non-nil time values
+    has_open_time = open_value != nil
+    has_close_time = close_value != nil
 
     cond do
-      closed and (has_open or has_close) ->
+      # Closed days can have nil times or no time fields at all
+      closed and (has_open_time or has_close_time) ->
         {:error, field: :special_hours, message: "entry marked as closed cannot have open/close times"}
 
-      not closed and (has_open or has_close) and not (has_open and has_close) ->
+      # Open days must have both open and close times (or neither)
+      not closed and (has_open_time or has_close_time) and not (has_open_time and has_close_time) ->
         {:error, field: :special_hours, message: "entry must have both open and close times, or be marked as closed"}
 
       true ->
@@ -359,14 +367,26 @@ defmodule PilatesOnPhx.Studios.Studio do
   end
 
   calculations do
-    calculate :is_open?, :boolean do
+    calculate :is_open, :boolean do
       public? true
       description "Calculates whether the studio is currently open based on regular_hours, special_hours, and timezone"
 
-      calculation fn studios, _context ->
+      # Support optional arguments for specifying time
+      argument :at, :datetime do
+        allow_nil? true
+        description "Optional datetime to check if studio is open at that time (defaults to current time)"
+      end
+
+      calculation fn studios, context ->
+        # Get the datetime to check (from argument or current time)
+        check_time = case Map.get(context.arguments, :at) do
+          nil -> DateTime.utc_now()
+          dt -> dt
+        end
+
         # Calculate for each studio
         Enum.map(studios, fn studio ->
-          {studio, calculate_is_open(studio, DateTime.utc_now())}
+          {studio, calculate_is_open(studio, check_time)}
         end)
       end
     end
