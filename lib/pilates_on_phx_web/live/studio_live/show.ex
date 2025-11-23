@@ -1,6 +1,8 @@
 defmodule PilatesOnPhxWeb.StudioLive.Show do
   use PilatesOnPhxWeb, :live_view
 
+  on_mount {PilatesOnPhxWeb.UserAuth, :default}
+
   require Ash.Query
 
   @impl true
@@ -34,7 +36,9 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
     actor = socket.assigns.current_user
     studio = socket.assigns.studio
 
-    case Ash.update(studio, :activate, %{}, actor: actor, domain: PilatesOnPhx.Studios) do
+    case studio
+         |> Ash.Changeset.for_update(:activate, %{}, actor: actor)
+         |> Ash.update(domain: PilatesOnPhx.Studios) do
       {:ok, updated_studio} ->
         {:noreply,
          socket
@@ -51,7 +55,9 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
     actor = socket.assigns.current_user
     studio = socket.assigns.studio
 
-    case Ash.update(studio, :deactivate, %{}, actor: actor, domain: PilatesOnPhx.Studios) do
+    case studio
+         |> Ash.Changeset.for_update(:deactivate, %{}, actor: actor)
+         |> Ash.update(domain: PilatesOnPhx.Studios) do
       {:ok, updated_studio} ->
         {:noreply,
          socket

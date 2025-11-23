@@ -35,4 +35,22 @@ defmodule PilatesOnPhxWeb.ConnCase do
     PilatesOnPhx.DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
+
+  @doc """
+  Logs in a user by putting the user_id in the session.
+
+  This simulates a logged-in user for testing LiveView pages.
+  """
+  def log_in_user(conn, user) do
+    # Generate a token for the user
+    {:ok, token} =
+      AshAuthentication.Jwt.token_for_user(user,
+        domain: PilatesOnPhx.Accounts,
+        purpose: :user
+      )
+
+    conn
+    |> Phoenix.ConnTest.init_test_session(%{})
+    |> Plug.Conn.put_session(:user_token, token)
+  end
 end

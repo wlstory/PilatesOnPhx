@@ -20,8 +20,7 @@ defmodule PilatesOnPhxWeb.Router do
   end
 
   pipeline :require_authenticated_user do
-    plug :fetch_current_user
-    plug :require_user
+    plug :load_from_session
   end
 
   scope "/", PilatesOnPhxWeb do

@@ -1,6 +1,8 @@
 defmodule PilatesOnPhxWeb.StudioLive.Index do
   use PilatesOnPhxWeb, :live_view
 
+  on_mount {PilatesOnPhxWeb.UserAuth, :default}
+
   require Ash.Query
 
   @impl true
@@ -113,7 +115,9 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
          |> Ash.Query.filter(id == ^id)
          |> Ash.read_one(actor: actor, domain: PilatesOnPhx.Studios) do
       {:ok, studio} when not is_nil(studio) ->
-        case Ash.update(studio, :deactivate, %{}, actor: actor, domain: PilatesOnPhx.Studios) do
+        case studio
+             |> Ash.Changeset.for_update(:deactivate, %{}, actor: actor)
+             |> Ash.update(domain: PilatesOnPhx.Studios) do
           {:ok, _updated_studio} ->
             studios =
               PilatesOnPhx.Studios.Studio

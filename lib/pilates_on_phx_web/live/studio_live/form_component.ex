@@ -49,7 +49,9 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
     actor = socket.assigns.current_user
     studio = socket.assigns.studio
 
-    case Ash.update(studio, :update, studio_params, actor: actor, domain: PilatesOnPhx.Studios) do
+    case studio
+         |> Ash.Changeset.for_update(:update, studio_params, actor: actor)
+         |> Ash.update(domain: PilatesOnPhx.Studios) do
       {:ok, studio} ->
         notify_parent({:saved, studio})
 
@@ -66,13 +68,9 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
   defp save_studio(socket, :new, studio_params) do
     actor = socket.assigns.current_user
 
-    case Ash.create(
-           PilatesOnPhx.Studios.Studio,
-           :create,
-           studio_params,
-           actor: actor,
-           domain: PilatesOnPhx.Studios
-         ) do
+    case PilatesOnPhx.Studios.Studio
+         |> Ash.Changeset.for_create(:create, studio_params, actor: actor)
+         |> Ash.create(domain: PilatesOnPhx.Studios) do
       {:ok, studio} ->
         notify_parent({:saved, studio})
 

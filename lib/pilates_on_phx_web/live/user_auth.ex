@@ -1,0 +1,35 @@
+defmodule PilatesOnPhxWeb.UserAuth do
+  @moduledoc """
+  LiveView authentication hooks for user session management.
+  """
+  import Phoenix.Component
+  import Phoenix.LiveView
+
+  def on_mount(:default, _params, session, socket) do
+    socket =
+      case session["user_token"] do
+        nil ->
+          assign(socket, :current_user, nil)
+
+        token ->
+          case AshAuthentication.Jwt.peek(token) do
+            {:ok, %{"sub" => user_id}} ->
+              # Load the user with their memberships
+              user =
+                PilatesOnPhx.Accounts.User
+                |> Ash.get!(user_id,
+                  domain: PilatesOnPhx.Accounts,
+                  authorize?: false,
+                  load: [:memberships]
+                )
+
+              assign(socket, :current_user, user)
+
+            _ ->
+              assign(socket, :current_user, nil)
+          end
+      end
+
+    {:cont, socket}
+  end
+end
