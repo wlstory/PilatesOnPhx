@@ -222,16 +222,32 @@ defmodule PilatesOnPhx.Studios.Studio do
     # Validate regular_hours structure and format
     validate fn changeset, _context ->
       case Ash.Changeset.get_attribute(changeset, :regular_hours) do
-        nil -> :ok
-        hours when hours == %{} -> :ok
+        nil ->
+          :ok
+
+        hours when hours == %{} ->
+          :ok
+
         hours when is_map(hours) ->
-          valid_days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+          valid_days = [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday"
+          ]
 
           # Validate each day's hours
           Enum.reduce_while(hours, :ok, fn {day, value}, _acc ->
             cond do
               day not in valid_days ->
-                {:halt, {:error, field: :regular_hours, message: "contains invalid day name: #{day}. Must be one of: #{Enum.join(valid_days, ", ")}"}}
+                {:halt,
+                 {:error,
+                  field: :regular_hours,
+                  message:
+                    "contains invalid day name: #{day}. Must be one of: #{Enum.join(valid_days, ", ")}"}}
 
               value == "closed" ->
                 {:cont, :ok}
@@ -243,7 +259,10 @@ defmodule PilatesOnPhx.Studios.Studio do
                 end
 
               true ->
-                {:halt, {:error, field: :regular_hours, message: "#{day} must be either 'closed' or a map with 'open' and 'close' keys"}}
+                {:halt,
+                 {:error,
+                  field: :regular_hours,
+                  message: "#{day} must be either 'closed' or a map with 'open' and 'close' keys"}}
             end
           end)
 
@@ -255,28 +274,36 @@ defmodule PilatesOnPhx.Studios.Studio do
     # Validate special_hours structure and format
     validate fn changeset, _context ->
       case Ash.Changeset.get_attribute(changeset, :special_hours) do
-        nil -> :ok
-        [] -> :ok
+        nil ->
+          :ok
+
+        [] ->
+          :ok
+
         hours when is_list(hours) ->
           # First validate each entry
-          validation_result = Enum.reduce_while(hours, :ok, fn entry, _acc ->
-            cond do
-              not is_map(entry) ->
-                {:halt, {:error, field: :special_hours, message: "each entry must be a map"}}
+          validation_result =
+            Enum.reduce_while(hours, :ok, fn entry, _acc ->
+              cond do
+                not is_map(entry) ->
+                  {:halt, {:error, field: :special_hours, message: "each entry must be a map"}}
 
-              not Map.has_key?(entry, "date") ->
-                {:halt, {:error, field: :special_hours, message: "each entry must have a 'date' field"}}
+                not Map.has_key?(entry, "date") ->
+                  {:halt,
+                   {:error, field: :special_hours, message: "each entry must have a 'date' field"}}
 
-              not Map.has_key?(entry, "reason") ->
-                {:halt, {:error, field: :special_hours, message: "each entry must have a 'reason' field"}}
+                not Map.has_key?(entry, "reason") ->
+                  {:halt,
+                   {:error,
+                    field: :special_hours, message: "each entry must have a 'reason' field"}}
 
-              true ->
-                case validate_special_hours_entry(entry) do
-                  :ok -> {:cont, :ok}
-                  error -> {:halt, error}
-                end
-            end
-          end)
+                true ->
+                  case validate_special_hours_entry(entry) do
+                    :ok -> {:cont, :ok}
+                    error -> {:halt, error}
+                  end
+              end
+            end)
 
           # If validation passed, check for duplicate dates
           case validation_result do
@@ -321,8 +348,13 @@ defmodule PilatesOnPhx.Studios.Studio do
   # Helper function to validate time format (HH:MM)
   defp validate_time_format(time, field) do
     case Regex.match?(~r/^([01]\d|2[0-3]):([0-5]\d)$/, time) do
-      true -> :ok
-      false -> {:error, field: :regular_hours, message: "#{field} must be in HH:MM format (00:00 to 23:59), got: #{time}"}
+      true ->
+        :ok
+
+      false ->
+        {:error,
+         field: :regular_hours,
+         message: "#{field} must be in HH:MM format (00:00 to 23:59), got: #{time}"}
     end
   end
 
@@ -333,7 +365,7 @@ defmodule PilatesOnPhx.Studios.Studio do
       # If entry has open/close times, validate their format
       # Only validate if values are not nil (closed entries won't have these)
       if Map.has_key?(entry, "open") and Map.has_key?(entry, "close") and
-         entry["open"] != nil and entry["close"] != nil do
+           entry["open"] != nil and entry["close"] != nil do
         with :ok <- validate_special_time_format(entry["open"], "open"),
              :ok <- validate_special_time_format(entry["close"], "close") do
           :ok
@@ -347,16 +379,26 @@ defmodule PilatesOnPhx.Studios.Studio do
   # Helper function to validate date format (ISO 8601: YYYY-MM-DD)
   defp validate_date_format(date) do
     case Regex.match?(~r/^\d{4}-\d{2}-\d{2}$/, date) do
-      true -> :ok
-      false -> {:error, field: :special_hours, message: "date must be in YYYY-MM-DD format (ISO 8601), got: #{date}"}
+      true ->
+        :ok
+
+      false ->
+        {:error,
+         field: :special_hours,
+         message: "date must be in YYYY-MM-DD format (ISO 8601), got: #{date}"}
     end
   end
 
   # Helper function to validate special hours time format
   defp validate_special_time_format(time, field) do
     case Regex.match?(~r/^([01]\d|2[0-3]):([0-5]\d)$/, time) do
-      true -> :ok
-      false -> {:error, field: :special_hours, message: "#{field} must be in HH:MM format (00:00 to 23:59), got: #{time}"}
+      true ->
+        :ok
+
+      false ->
+        {:error,
+         field: :special_hours,
+         message: "#{field} must be in HH:MM format (00:00 to 23:59), got: #{time}"}
     end
   end
 
@@ -373,11 +415,14 @@ defmodule PilatesOnPhx.Studios.Studio do
     cond do
       # Closed days can have nil times or no time fields at all
       closed and (has_open_time or has_close_time) ->
-        {:error, field: :special_hours, message: "entry marked as closed cannot have open/close times"}
+        {:error,
+         field: :special_hours, message: "entry marked as closed cannot have open/close times"}
 
       # Open days must have both open and close times (or neither)
       not closed and (has_open_time or has_close_time) and not (has_open_time and has_close_time) ->
-        {:error, field: :special_hours, message: "entry must have both open and close times, or be marked as closed"}
+        {:error,
+         field: :special_hours,
+         message: "entry must have both open and close times, or be marked as closed"}
 
       true ->
         :ok
@@ -387,6 +432,7 @@ defmodule PilatesOnPhx.Studios.Studio do
   calculations do
     calculate :is_open, :boolean do
       public? true
+
       description "Calculates whether the studio is currently open based on regular_hours, special_hours, and timezone"
 
       # Support optional arguments for specifying time
@@ -396,10 +442,11 @@ defmodule PilatesOnPhx.Studios.Studio do
 
       calculation fn studios, context ->
         # Get the datetime to check (from argument or current time)
-        check_time = case Map.get(context.arguments, :at) do
-          nil -> DateTime.utc_now()
-          dt -> dt
-        end
+        check_time =
+          case Map.get(context.arguments, :at) do
+            nil -> DateTime.utc_now()
+            dt -> dt
+          end
 
         # Calculate for each studio
         Enum.map(studios, fn studio ->
@@ -432,7 +479,8 @@ defmodule PilatesOnPhx.Studios.Studio do
   end
 
   # Check if there are special hours for the given date
-  defp check_special_hours(special_hours, _date, _studio_time) when is_nil(special_hours) or special_hours == [] do
+  defp check_special_hours(special_hours, _date, _studio_time)
+       when is_nil(special_hours) or special_hours == [] do
     :no_special_hours
   end
 
@@ -459,7 +507,8 @@ defmodule PilatesOnPhx.Studios.Studio do
   end
 
   # Check regular hours for the given day
-  defp check_regular_hours(regular_hours, _studio_time) when is_nil(regular_hours) or regular_hours == %{} do
+  defp check_regular_hours(regular_hours, _studio_time)
+       when is_nil(regular_hours) or regular_hours == %{} do
     false
   end
 
@@ -539,8 +588,12 @@ defmodule PilatesOnPhx.Studios.Studio do
       # Sort special_hours by date after validation
       change fn changeset, _context ->
         case Ash.Changeset.get_attribute(changeset, :special_hours) do
-          nil -> changeset
-          [] -> changeset
+          nil ->
+            changeset
+
+          [] ->
+            changeset
+
           hours when is_list(hours) ->
             # Sort special_hours by date
             sorted_hours = Enum.sort_by(hours, & &1["date"])
@@ -558,14 +611,29 @@ defmodule PilatesOnPhx.Studios.Studio do
     end
 
     update :update do
-      accept [:name, :address, :timezone, :max_capacity, :operating_hours, :regular_hours, :special_hours, :settings, :active]
+      accept [
+        :name,
+        :address,
+        :timezone,
+        :max_capacity,
+        :operating_hours,
+        :regular_hours,
+        :special_hours,
+        :settings,
+        :active
+      ]
+
       require_atomic? false
 
       # Sort special_hours by date after validation
       change fn changeset, _context ->
         case Ash.Changeset.get_attribute(changeset, :special_hours) do
-          nil -> changeset
-          [] -> changeset
+          nil ->
+            changeset
+
+          [] ->
+            changeset
+
           hours when is_list(hours) ->
             # Sort special_hours by date
             sorted_hours = Enum.sort_by(hours, & &1["date"])
