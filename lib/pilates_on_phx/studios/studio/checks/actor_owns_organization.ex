@@ -17,8 +17,10 @@ defmodule PilatesOnPhx.Studios.Studio.Checks.ActorOwnsOrganization do
   def match?(nil, _context, _opts), do: false
 
   def match?(actor, %{changeset: %Ash.Changeset{} = changeset}, _opts) when is_map(actor) do
-    # Get organization_id from changeset arguments
-    organization_id = Ash.Changeset.get_argument(changeset, :organization_id)
+    # Get organization_id from changeset attributes or arguments
+    organization_id =
+      Ash.Changeset.get_attribute(changeset, :organization_id) ||
+        Ash.Changeset.get_argument(changeset, :organization_id)
 
     if organization_id do
       # Load the organization and check if actor is an owner
