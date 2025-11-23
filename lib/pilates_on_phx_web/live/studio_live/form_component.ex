@@ -95,6 +95,8 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
   end
 
   defp assign_form(socket, studio, params \\ %{}) do
+    organizations = socket.assigns[:organizations] || []
+
     form_data =
       if studio do
         %{
@@ -106,7 +108,14 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
         }
         |> Map.merge(params)
       else
-        params
+        # For new studios, auto-select first organization if not provided
+        default_org_id =
+          if Enum.empty?(organizations), do: nil, else: List.first(organizations).id
+
+        %{
+          "organization_id" => default_org_id
+        }
+        |> Map.merge(params)
       end
 
     form = to_form(form_data)
