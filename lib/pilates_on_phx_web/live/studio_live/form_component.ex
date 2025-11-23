@@ -64,8 +64,11 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
          |> put_flash(:info, "Studio updated successfully")
          |> push_navigate(to: socket.assigns.navigate)}
 
-      {:error, changeset} ->
-        {:noreply, assign_form(socket, changeset)}
+      {:error, _changeset} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Failed to update studio")
+         |> assign_form(socket.assigns.studio, studio_params)}
     end
   end
 
@@ -83,8 +86,11 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
          |> put_flash(:info, "Studio created successfully")
          |> push_navigate(to: socket.assigns.navigate)}
 
-      {:error, changeset} ->
-        {:noreply, assign_form(socket, changeset)}
+      {:error, _changeset} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Failed to create studio")
+         |> assign_form(nil, studio_params)}
     end
   end
 
