@@ -299,21 +299,6 @@ defmodule PilatesOnPhx.Studios.Studio do
           {:error, field: :special_hours, message: "must be a list"}
       end
     end
-
-    # Sort special_hours by date using a before_action hook
-    before_action fn changeset, _context ->
-      case Ash.Changeset.get_attribute(changeset, :special_hours) do
-        nil -> changeset
-        [] -> changeset
-        hours when is_list(hours) ->
-          # Sort special_hours by date
-          sorted_hours = Enum.sort_by(hours, & &1["date"])
-          Ash.Changeset.force_change_attribute(changeset, :special_hours, sorted_hours)
-
-        _ ->
-          changeset
-      end
-    end
   end
 
   # Helper function to validate hours map (open/close times)
@@ -550,6 +535,21 @@ defmodule PilatesOnPhx.Studios.Studio do
         :active,
         :organization_id
       ]
+
+      # Sort special_hours by date after validation
+      change fn changeset, _context ->
+        case Ash.Changeset.get_attribute(changeset, :special_hours) do
+          nil -> changeset
+          [] -> changeset
+          hours when is_list(hours) ->
+            # Sort special_hours by date
+            sorted_hours = Enum.sort_by(hours, & &1["date"])
+            Ash.Changeset.force_change_attribute(changeset, :special_hours, sorted_hours)
+
+          _ ->
+            changeset
+        end
+      end
     end
 
     destroy :destroy do
@@ -560,6 +560,21 @@ defmodule PilatesOnPhx.Studios.Studio do
     update :update do
       accept [:name, :address, :timezone, :max_capacity, :operating_hours, :regular_hours, :special_hours, :settings, :active]
       require_atomic? false
+
+      # Sort special_hours by date after validation
+      change fn changeset, _context ->
+        case Ash.Changeset.get_attribute(changeset, :special_hours) do
+          nil -> changeset
+          [] -> changeset
+          hours when is_list(hours) ->
+            # Sort special_hours by date
+            sorted_hours = Enum.sort_by(hours, & &1["date"])
+            Ash.Changeset.force_change_attribute(changeset, :special_hours, sorted_hours)
+
+          _ ->
+            changeset
+        end
+      end
     end
 
     update :activate do
