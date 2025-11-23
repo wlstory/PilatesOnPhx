@@ -58,11 +58,7 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
          |> Ash.update(domain: PilatesOnPhx.Studios) do
       {:ok, studio} ->
         notify_parent({:saved, studio})
-
-        {:noreply,
-         socket
-         |> put_flash(:info, "Studio updated successfully")
-         |> push_navigate(to: socket.assigns.navigate)}
+        {:noreply, socket}
 
       {:error, _changeset} ->
         {:noreply,
@@ -80,11 +76,7 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
          |> Ash.create(domain: PilatesOnPhx.Studios) do
       {:ok, studio} ->
         notify_parent({:saved, studio})
-
-        {:noreply,
-         socket
-         |> put_flash(:info, "Studio created successfully")
-         |> push_navigate(to: socket.assigns.navigate)}
+        {:noreply, socket}
 
       {:error, _changeset} ->
         {:noreply,
