@@ -81,17 +81,35 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
         notify_parent({:saved, studio})
         {:noreply, socket}
 
-      {:error, changeset} ->
+      {:error, error} ->
         require Logger
-        Logger.error("Failed to create studio: #{inspect(changeset)}")
+        Logger.error("Failed to create studio: #{inspect(error)}")
 
-        # Convert Ash errors to form errors
-        form = to_form(changeset)
+        # Extract error messages from Ash error struct
+        error_message =
+          case error do
+            %Ash.Error.Invalid{errors: errors} ->
+              errors
+              |> Enum.map(fn
+                %{field: field, message: message} when not is_nil(field) ->
+                  "#{field}: #{message}"
+
+                %{message: message} ->
+                  message
+
+                _ ->
+                  "Invalid input"
+              end)
+              |> Enum.join(", ")
+
+            _ ->
+              "Failed to create studio"
+          end
 
         {:noreply,
          socket
-         |> assign(:form, form)
-         |> put_flash(:error, "Please fix the errors below")}
+         |> put_flash(:error, error_message)
+         |> assign_form(nil, studio_params)}
     end
   end
 
