@@ -121,6 +121,14 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
                 {if @studio.active, do: "Active", else: "Inactive"}
               </span>
             </div>
+            <div :if={@studio.settings && @studio.settings["wifi_password"]}>
+              <p class="text-sm text-gray-500">WiFi Password</p>
+              <p class="font-medium">{@studio.settings["wifi_password"]}</p>
+            </div>
+            <div :if={@studio.settings && @studio.settings["parking_info"]}>
+              <p class="text-sm text-gray-500">Parking Info</p>
+              <p class="font-medium">{@studio.settings["parking_info"]}</p>
+            </div>
           </div>
 
           <div
