@@ -98,8 +98,20 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
         phx-change="validate"
         phx-submit="save"
       >
-        <.input field={@form[:name]} type="text" label="Studio Name" required />
-        <.input field={@form[:address]} type="text" label="Address" required />
+        <.input
+          field={@form[:name]}
+          type="text"
+          label="Studio Name"
+          placeholder="e.g., Downtown Pilates Studio"
+          required
+        />
+        <.input
+          field={@form[:address]}
+          type="text"
+          label="Address"
+          placeholder="e.g., 123 Main Street, City, State 12345"
+          required
+        />
 
         <.input
           field={@form[:timezone]}
@@ -135,9 +147,9 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
           <button type="submit" class="btn btn-primary">
             Save
           </button>
-          <button type="button" phx-click={JS.exec("data-cancel", to: "#studio-modal")} class="btn">
+          <.link navigate={~p"/studios"} class="btn">
             Cancel
-          </button>
+          </.link>
         </div>
       </.form>
     </div>
