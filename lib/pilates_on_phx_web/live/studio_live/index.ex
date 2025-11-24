@@ -13,7 +13,7 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
       {:ok,
        socket
        |> put_flash(:error, "You must be logged in to access this page")
-       |> redirect(to: ~p"/")}
+       |> redirect(to: "/sign-in")}
     else
       # All authenticated users can view studios list (filtered by their organizations)
       # Owner-only actions are protected in apply_action
@@ -64,7 +64,7 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
       _ ->
         socket
         |> put_flash(:error, "Studio not found")
-        |> push_navigate(to: ~p"/studios")
+        |> redirect(to: ~p"/studios")
     end
   end
 
@@ -85,7 +85,7 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
     else
       socket
       |> put_flash(:error, "You must be an owner to create studios")
-      |> push_navigate(to: ~p"/studios")
+      |> redirect(to: ~p"/")
     end
   end
 

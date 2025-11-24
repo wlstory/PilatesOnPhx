@@ -13,7 +13,7 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
       {:ok,
        socket
        |> put_flash(:error, "You must be logged in to access this page")
-       |> redirect(to: ~p"/")}
+       |> redirect(to: "/sign-in")}
     else
       {:ok, socket}
     end
@@ -36,7 +36,7 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
         {:noreply,
          socket
          |> put_flash(:error, "Studio not found")
-         |> push_navigate(to: ~p"/studios")}
+         |> redirect(to: ~p"/studios")}
     end
   end
 
