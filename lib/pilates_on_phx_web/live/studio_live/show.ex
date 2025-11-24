@@ -7,7 +7,16 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket}
+    actor = socket.assigns[:current_user]
+
+    if is_nil(actor) do
+      {:ok,
+       socket
+       |> put_flash(:error, "You must be logged in to access this page")
+       |> redirect(to: ~p"/")}
+    else
+      {:ok, socket}
+    end
   end
 
   @impl true
@@ -32,25 +41,6 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
   end
 
   @impl true
-  def handle_event("activate", _params, socket) do
-    actor = socket.assigns.current_user
-    studio = socket.assigns.studio
-
-    case studio
-         |> Ash.Changeset.for_update(:activate, %{}, actor: actor)
-         |> Ash.update(domain: PilatesOnPhx.Studios) do
-      {:ok, updated_studio} ->
-        {:noreply,
-         socket
-         |> assign(:studio, updated_studio)
-         |> put_flash(:info, "Studio activated successfully")}
-
-      {:error, _error} ->
-        {:noreply, put_flash(socket, :error, "Failed to activate studio")}
-    end
-  end
-
-  @impl true
   def handle_event("deactivate", _params, socket) do
     actor = socket.assigns.current_user
     studio = socket.assigns.studio
@@ -69,6 +59,22 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
     end
   end
 
+  defp user_is_owner_in_any_org?(user) do
+    case Map.get(user, :memberships) do
+      memberships when is_list(memberships) ->
+        Enum.any?(memberships, fn m -> m.role == :owner end)
+
+      _ ->
+        case Ash.load(user, :memberships, domain: PilatesOnPhx.Accounts, authorize?: false) do
+          {:ok, loaded_user} ->
+            Enum.any?(loaded_user.memberships || [], fn m -> m.role == :owner end)
+
+          _ ->
+            false
+        end
+    end
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -76,7 +82,7 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">{@studio.name}</h1>
         <div class="flex gap-2">
-          <.link navigate={~p"/studios/#{@studio}/edit"} class="btn btn-primary">
+          <.link :if={user_is_owner_in_any_org?(@current_user)} navigate={~p"/studios/#{@studio}/edit"} class="btn btn-primary">
             Edit Studio
           </.link>
           <.link navigate={~p"/studios"} class="btn btn-ghost">
@@ -88,23 +94,19 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
       <div class="card bg-base-100 shadow-xl mb-6">
         <div class="card-body">
           <h2 class="card-title">Studio Information</h2>
-
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
               <p class="text-sm text-gray-500">Address</p>
               <p class="font-medium">{@studio.address}</p>
             </div>
-
             <div>
               <p class="text-sm text-gray-500">Timezone</p>
               <p class="font-medium">{@studio.timezone}</p>
             </div>
-
             <div>
               <p class="text-sm text-gray-500">Max Capacity</p>
               <p class="font-medium">{@studio.max_capacity}</p>
             </div>
-
             <div>
               <p class="text-sm text-gray-500">Status</p>
               <span class={[
@@ -117,16 +119,8 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
             </div>
           </div>
 
-          <div class="card-actions justify-end mt-4">
+          <div :if={user_is_owner_in_any_org?(@current_user) and @studio.active} class="card-actions justify-end mt-4">
             <button
-              :if={!@studio.active}
-              phx-click="activate"
-              class="btn btn-success"
-            >
-              Activate Studio
-            </button>
-            <button
-              :if={@studio.active}
               phx-click="deactivate"
               data-confirm="Are you sure you want to deactivate this studio?"
               class="btn btn-warning"
