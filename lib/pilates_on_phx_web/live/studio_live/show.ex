@@ -62,6 +62,11 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
   @impl true
   def handle_event("deactivate", _params, socket) do
     actor = socket.assigns.current_user
+
+    unless user_is_owner_in_any_org?(actor) do
+      raise "Unauthorized: Only owners can deactivate studios"
+    end
+
     studio = socket.assigns.studio
 
     case studio

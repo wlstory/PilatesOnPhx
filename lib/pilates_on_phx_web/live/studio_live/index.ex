@@ -47,24 +47,31 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
   defp apply_action(socket, :edit, %{"id" => id}) do
     actor = socket.assigns.current_user
 
-    studios =
-      PilatesOnPhx.Studios.Studio
-      |> Ash.Query.sort(name: :asc)
-      |> Ash.read!(actor: actor, domain: PilatesOnPhx.Studios)
+    # Only owners can edit studios
+    if user_is_owner_in_any_org?(actor) do
+      studios =
+        PilatesOnPhx.Studios.Studio
+        |> Ash.Query.sort(name: :asc)
+        |> Ash.read!(actor: actor, domain: PilatesOnPhx.Studios)
 
-    case PilatesOnPhx.Studios.Studio
-         |> Ash.Query.filter(id == ^id)
-         |> Ash.read_one(actor: actor, domain: PilatesOnPhx.Studios) do
-      {:ok, studio} when not is_nil(studio) ->
-        socket
-        |> assign(:page_title, "Edit Studio")
-        |> assign(:studio, studio)
-        |> assign(:studios, studios)
+      case PilatesOnPhx.Studios.Studio
+           |> Ash.Query.filter(id == ^id)
+           |> Ash.read_one(actor: actor, domain: PilatesOnPhx.Studios) do
+        {:ok, studio} when not is_nil(studio) ->
+          socket
+          |> assign(:page_title, "Edit Studio")
+          |> assign(:studio, studio)
+          |> assign(:studios, studios)
 
-      _ ->
-        socket
-        |> put_flash(:error, "Studio not found")
-        |> redirect(to: ~p"/studios")
+        _ ->
+          socket
+          |> put_flash(:error, "Studio not found")
+          |> redirect(to: ~p"/studios")
+      end
+    else
+      socket
+      |> put_flash(:error, "You must be an owner to edit studios")
+      |> redirect(to: ~p"/")
     end
   end
 
