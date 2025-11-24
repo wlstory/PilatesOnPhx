@@ -116,7 +116,7 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
         <.input
           field={@form[:max_capacity]}
           type="number"
-          label="Max Capacity"
+          label="Max capacity"
           min="1"
           max="500"
           required
