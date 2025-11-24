@@ -8,11 +8,29 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
     actor = assigns.current_user
     organizations = get_user_owner_organizations(actor)
 
+    form =
+      if studio do
+        AshPhoenix.Form.for_update(studio, :update,
+          domain: PilatesOnPhx.Studios,
+          actor: actor
+        )
+      else
+        # Auto-select first organization for new studios
+        default_org_id =
+          if Enum.empty?(organizations), do: nil, else: List.first(organizations).id
+
+        AshPhoenix.Form.for_create(PilatesOnPhx.Studios.Studio, :create,
+          domain: PilatesOnPhx.Studios,
+          actor: actor,
+          params: %{"organization_id" => default_org_id}
+        )
+      end
+
     {:ok,
      socket
      |> assign(assigns)
      |> assign(:organizations, organizations)
-     |> assign_form(studio)}
+     |> assign(:form, to_form(form))}
   end
 
   defp get_user_owner_organizations(actor) do
@@ -41,111 +59,24 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
 
   @impl true
   def handle_event("validate", %{"studio" => studio_params}, socket) do
-    {:noreply, assign_form(socket, socket.assigns.studio, studio_params)}
+    form = AshPhoenix.Form.validate(socket.assigns.form.source, studio_params)
+
+    {:noreply, assign(socket, :form, to_form(form))}
   end
 
   @impl true
   def handle_event("save", %{"studio" => studio_params}, socket) do
-    save_studio(socket, socket.assigns.action, studio_params)
-  end
+    # Validate form first
+    form = AshPhoenix.Form.validate(socket.assigns.form.source, studio_params)
 
-  defp save_studio(socket, :edit, studio_params) do
-    actor = socket.assigns.current_user
-    studio = socket.assigns.studio
-
-    case studio
-         |> Ash.Changeset.for_update(:update, studio_params, actor: actor)
-         |> Ash.update(domain: PilatesOnPhx.Studios) do
+    case AshPhoenix.Form.submit(form) do
       {:ok, studio} ->
         notify_parent({:saved, studio})
         {:noreply, socket}
 
-      {:error, _changeset} ->
-        {:noreply,
-         socket
-         |> put_flash(:error, "Failed to update studio")
-         |> assign_form(socket.assigns.studio, studio_params)}
+      {:error, form} ->
+        {:noreply, assign(socket, :form, to_form(form))}
     end
-  end
-
-  defp save_studio(socket, :new, studio_params) do
-    actor = socket.assigns.current_user
-
-    # Clean params - remove empty strings to let Ash defaults apply
-    cleaned_params = reject_empty_values(studio_params)
-
-    case PilatesOnPhx.Studios.Studio
-         |> Ash.Changeset.for_create(:create, cleaned_params, actor: actor)
-         |> Ash.create(domain: PilatesOnPhx.Studios) do
-      {:ok, studio} ->
-        notify_parent({:saved, studio})
-        {:noreply, socket}
-
-      {:error, error} ->
-        require Logger
-        Logger.error("Failed to create studio: #{inspect(error)}")
-
-        # Extract error messages from Ash error struct
-        error_message =
-          case error do
-            %Ash.Error.Invalid{errors: errors} ->
-              errors
-              |> Enum.map(fn
-                %{field: field, message: message} when not is_nil(field) ->
-                  "#{field}: #{message}"
-
-                %{message: message} ->
-                  message
-
-                _ ->
-                  "Invalid input"
-              end)
-              |> Enum.join(", ")
-
-            _ ->
-              "Failed to create studio"
-          end
-
-        {:noreply,
-         socket
-         |> put_flash(:error, error_message)
-         |> assign_form(nil, studio_params)}
-    end
-  end
-
-  defp reject_empty_values(params) when is_map(params) do
-    params
-    |> Enum.reject(fn {_key, value} -> value == "" or value == nil end)
-    |> Enum.into(%{})
-  end
-
-  defp assign_form(socket, studio, params \\ %{}) do
-    organizations = socket.assigns[:organizations] || []
-
-    form_data =
-      if studio do
-        %{
-          "name" => studio.name,
-          "address" => studio.address,
-          "timezone" => studio.timezone,
-          "max_capacity" => studio.max_capacity,
-          "organization_id" => studio.organization_id
-        }
-        |> Map.merge(params)
-      else
-        # For new studios, auto-select first organization if not provided
-        default_org_id =
-          if Enum.empty?(organizations), do: nil, else: List.first(organizations).id
-
-        %{
-          "organization_id" => default_org_id
-        }
-        |> Map.merge(params)
-      end
-
-    form = to_form(form_data)
-
-    assign(socket, :form, form)
   end
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
@@ -165,110 +96,38 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
         phx-change="validate"
         phx-submit="save"
       >
-        <div class="form-control w-full mb-4">
-          <label class="label">
-            <span class="label-text">Studio Name</span>
-          </label>
-          <input
-            type="text"
-            name="studio[name]"
-            value={@form["name"].value || ""}
-            class={[
-              "input input-bordered w-full",
-              @form["name"].errors != [] && "input-error"
-            ]}
-            required
-          />
-          <label :if={@form["name"].errors != []} class="label">
-            <span class="label-text-alt text-error">
-              {@form["name"].errors |> Enum.map_join(", ", fn {msg, _} -> msg end)}
-            </span>
-          </label>
-        </div>
+        <.input field={@form[:name]} type="text" label="Studio Name" required />
+        <.input field={@form[:address]} type="text" label="Address" required />
 
-        <div class="form-control w-full mb-4">
-          <label class="label">
-            <span class="label-text">Address</span>
-          </label>
-          <input
-            type="text"
-            name="studio[address]"
-            value={@form["address"].value || ""}
-            class="input input-bordered w-full"
-            required
-          />
-        </div>
+        <.input
+          field={@form[:timezone]}
+          type="select"
+          label="Timezone"
+          options={[
+            {"Eastern Time (America/New_York)", "America/New_York"},
+            {"Central Time (America/Chicago)", "America/Chicago"},
+            {"Mountain Time (America/Denver)", "America/Denver"},
+            {"Pacific Time (America/Los_Angeles)", "America/Los_Angeles"}
+          ]}
+        />
 
-        <div class="form-control w-full mb-4">
-          <label class="label">
-            <span class="label-text">Timezone</span>
-          </label>
-          <select name="studio[timezone]" class="select select-bordered w-full">
-            <option
-              value="America/New_York"
-              selected={(@form["timezone"].value || "America/New_York") == "America/New_York"}
-            >
-              Eastern Time (America/New_York)
-            </option>
-            <option
-              value="America/Chicago"
-              selected={(@form["timezone"].value || "") == "America/Chicago"}
-            >
-              Central Time (America/Chicago)
-            </option>
-            <option
-              value="America/Denver"
-              selected={(@form["timezone"].value || "") == "America/Denver"}
-            >
-              Mountain Time (America/Denver)
-            </option>
-            <option
-              value="America/Los_Angeles"
-              selected={(@form["timezone"].value || "") == "America/Los_Angeles"}
-            >
-              Pacific Time (America/Los_Angeles)
-            </option>
-          </select>
-        </div>
+        <.input
+          field={@form[:max_capacity]}
+          type="number"
+          label="Max Capacity"
+          min="1"
+          max="500"
+          required
+        />
 
-        <div class="form-control w-full mb-4">
-          <label class="label">
-            <span class="label-text">Max Capacity</span>
-          </label>
-          <input
-            type="number"
-            name="studio[max_capacity]"
-            value={@form["max_capacity"].value || ""}
-            class={[
-              "input input-bordered w-full",
-              @form["max_capacity"].errors != [] && "input-error"
-            ]}
-            min="1"
-            max="500"
-            required
-          />
-          <label :if={@form["max_capacity"].errors != []} class="label">
-            <span class="label-text-alt text-error">
-              {@form["max_capacity"].errors |> Enum.map_join(", ", fn {msg, _} -> msg end)}
-            </span>
-          </label>
-        </div>
-
-        <div :if={@action == :new} class="form-control w-full mb-4">
-          <label class="label">
-            <span class="label-text">Organization</span>
-          </label>
-          <select name="studio[organization_id]" class="select select-bordered w-full" required>
-            <option value="">Select an organization</option>
-            <option
-              :for={org <- @organizations}
-              value={org.id}
-              selected={@form["organization_id"].value == org.id}
-            >
-              {org.name}
-            </option>
-          </select>
-        </div>
+        <.input
+          :if={@action == :new}
+          field={@form[:organization_id]}
+          type="select"
+          label="Organization"
+          options={[{"Select an organization", ""} | Enum.map(@organizations, &{&1.name, &1.id})]}
+          required
+        />
 
         <div class="modal-action">
           <button type="submit" class="btn btn-primary">
