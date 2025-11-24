@@ -105,18 +105,10 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
 
   @impl true
   def handle_info({PilatesOnPhxWeb.StudioLive.FormComponent, {:saved, studio}}, socket) do
-    actor = socket.assigns.current_user
-
-    studios =
-      PilatesOnPhx.Studios.Studio
-      |> Ash.Query.sort(name: :asc)
-      |> Ash.read!(actor: actor, domain: PilatesOnPhx.Studios)
-
     {:noreply,
      socket
-     |> assign(:studios, studios)
      |> put_flash(:info, "Studio #{studio.name} saved successfully")
-     |> push_navigate(to: ~p"/studios")}
+     |> redirect(to: ~p"/studios/#{studio}")}
   end
 
   @impl true
