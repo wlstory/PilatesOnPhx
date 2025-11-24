@@ -72,11 +72,7 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
     actor = socket.assigns.current_user
 
     # Only owners can create studios
-    if not user_is_owner_in_any_org?(actor) do
-      socket
-      |> put_flash(:error, "You must be an owner to create studios")
-      |> push_navigate(to: ~p"/studios")
-    else
+    if user_is_owner_in_any_org?(actor) do
       studios =
         PilatesOnPhx.Studios.Studio
         |> Ash.Query.sort(name: :asc)
@@ -86,6 +82,10 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
       |> assign(:page_title, "New Studio")
       |> assign(:studio, nil)
       |> assign(:studios, studios)
+    else
+      socket
+      |> put_flash(:error, "You must be an owner to create studios")
+      |> push_navigate(to: ~p"/studios")
     end
   end
 
@@ -185,7 +185,11 @@ defmodule PilatesOnPhxWeb.StudioLive.Index do
     <div class="container mx-auto px-4 py-8">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">Studios</h1>
-        <.link :if={user_is_owner_in_any_org?(@current_user)} navigate={~p"/studios/new"} class="btn btn-primary">
+        <.link
+          :if={user_is_owner_in_any_org?(@current_user)}
+          navigate={~p"/studios/new"}
+          class="btn btn-primary"
+        >
           New Studio
         </.link>
       </div>

@@ -82,7 +82,11 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">{@studio.name}</h1>
         <div class="flex gap-2">
-          <.link :if={user_is_owner_in_any_org?(@current_user)} navigate={~p"/studios/#{@studio}/edit"} class="btn btn-primary">
+          <.link
+            :if={user_is_owner_in_any_org?(@current_user)}
+            navigate={~p"/studios/#{@studio}/edit"}
+            class="btn btn-primary"
+          >
             Edit Studio
           </.link>
           <.link navigate={~p"/studios"} class="btn btn-ghost">
@@ -119,7 +123,10 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
             </div>
           </div>
 
-          <div :if={user_is_owner_in_any_org?(@current_user) and @studio.active} class="card-actions justify-end mt-4">
+          <div
+            :if={user_is_owner_in_any_org?(@current_user) and @studio.active}
+            class="card-actions justify-end mt-4"
+          >
             <button
               phx-click="deactivate"
               data-confirm="Are you sure you want to deactivate this studio?"
