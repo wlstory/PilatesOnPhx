@@ -41,6 +41,25 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
   end
 
   @impl true
+  def handle_event("activate", _params, socket) do
+    actor = socket.assigns.current_user
+    studio = socket.assigns.studio
+
+    case studio
+         |> Ash.Changeset.for_update(:activate, %{}, actor: actor)
+         |> Ash.update(domain: PilatesOnPhx.Studios) do
+      {:ok, updated_studio} ->
+        {:noreply,
+         socket
+         |> assign(:studio, updated_studio)
+         |> put_flash(:info, "Studio activated successfully")}
+
+      {:error, _error} ->
+        {:noreply, put_flash(socket, :error, "Failed to activate studio")}
+    end
+  end
+
+  @impl true
   def handle_event("deactivate", _params, socket) do
     actor = socket.assigns.current_user
     studio = socket.assigns.studio
@@ -131,11 +150,17 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
             </div>
           </div>
 
-          <div
-            :if={user_is_owner_in_any_org?(@current_user) and @studio.active}
-            class="card-actions justify-end mt-4"
-          >
+          <div :if={user_is_owner_in_any_org?(@current_user)} class="card-actions justify-end mt-4">
             <button
+              :if={!@studio.active}
+              phx-click="activate"
+              data-confirm="Are you sure you want to activate this studio?"
+              class="btn btn-success"
+            >
+              Activate
+            </button>
+            <button
+              :if={@studio.active}
               phx-click="deactivate"
               data-confirm="Are you sure you want to deactivate this studio?"
               class="btn btn-warning"
