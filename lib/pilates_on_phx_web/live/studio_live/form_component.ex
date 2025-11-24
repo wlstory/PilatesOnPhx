@@ -12,7 +12,8 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
       if studio do
         AshPhoenix.Form.for_update(studio, :update,
           domain: PilatesOnPhx.Studios,
-          actor: actor
+          actor: actor,
+          as: "studio"
         )
       else
         # Auto-select first organization for new studios
@@ -22,6 +23,7 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
         AshPhoenix.Form.for_create(PilatesOnPhx.Studios.Studio, :create,
           domain: PilatesOnPhx.Studios,
           actor: actor,
+          as: "studio",
           params: %{"organization_id" => default_org_id}
         )
       end
@@ -69,7 +71,7 @@ defmodule PilatesOnPhxWeb.StudioLive.FormComponent do
     # Validate form first
     form = AshPhoenix.Form.validate(socket.assigns.form.source, studio_params)
 
-    case AshPhoenix.Form.submit(form) do
+    case AshPhoenix.Form.submit(form, params: studio_params) do
       {:ok, studio} ->
         notify_parent({:saved, studio})
         {:noreply, socket}
