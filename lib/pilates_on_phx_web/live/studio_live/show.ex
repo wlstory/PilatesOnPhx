@@ -64,22 +64,22 @@ defmodule PilatesOnPhxWeb.StudioLive.Show do
     actor = socket.assigns.current_user
 
     unless user_is_owner_in_any_org?(actor) do
-      raise "Unauthorized: Only owners can deactivate studios"
-    end
+      {:noreply, put_flash(socket, :error, "Unauthorized: Only owners can deactivate studios")}
+    else
+      studio = socket.assigns.studio
 
-    studio = socket.assigns.studio
+      case studio
+           |> Ash.Changeset.for_update(:deactivate, %{}, actor: actor)
+           |> Ash.update(domain: PilatesOnPhx.Studios) do
+        {:ok, updated_studio} ->
+          {:noreply,
+           socket
+           |> assign(:studio, updated_studio)
+           |> put_flash(:info, "Studio deactivated successfully")}
 
-    case studio
-         |> Ash.Changeset.for_update(:deactivate, %{}, actor: actor)
-         |> Ash.update(domain: PilatesOnPhx.Studios) do
-      {:ok, updated_studio} ->
-        {:noreply,
-         socket
-         |> assign(:studio, updated_studio)
-         |> put_flash(:info, "Studio deactivated successfully")}
-
-      {:error, _error} ->
-        {:noreply, put_flash(socket, :error, "Failed to deactivate studio")}
+        {:error, _error} ->
+          {:noreply, put_flash(socket, :error, "Failed to deactivate studio")}
+      end
     end
   end
 
